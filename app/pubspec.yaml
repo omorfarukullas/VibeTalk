@@ -1,0 +1,72 @@
+name: vibetalk
+description: "VibeTalk — End-to-end encrypted messaging and calling app."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # ── Firebase ─────────────────────────────────────────────────────────
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.6.0
+  cloud_firestore: ^5.6.7
+  firebase_messaging: ^15.2.6
+
+  # ── Networking ───────────────────────────────────────────────────────
+  dio: ^5.8.0
+  socket_io_client: ^3.0.2
+
+  # ── State Management ─────────────────────────────────────────────────
+  bloc: ^9.0.0
+  flutter_bloc: ^9.1.0
+
+  # ── Navigation ───────────────────────────────────────────────────────
+  go_router: ^15.1.2
+
+  # ── Dependency Injection ─────────────────────────────────────────────
+  get_it: ^8.0.3
+
+  # ── Local Storage ────────────────────────────────────────────────────
+  hive: ^4.0.1
+  hive_flutter: ^1.1.0
+
+  # ── Encryption ───────────────────────────────────────────────────────
+  encrypt: ^5.0.3
+
+  # ── WebRTC (Voice/Video/Screen Share) ────────────────────────────────
+  flutter_webrtc: ^0.12.12
+
+  # ── Permissions ──────────────────────────────────────────────────────
+  permission_handler: ^11.4.0
+
+  # ── Media / Files ────────────────────────────────────────────────────
+  image_picker: ^1.1.2
+  file_picker: ^10.1.7
+  cached_network_image: ^3.4.1
+  flutter_sound: ^9.20.5
+
+  # ── Error Tracking ──────────────────────────────────────────────────
+  sentry_flutter: ^8.14.2
+
+  # ── Environment Variables ───────────────────────────────────────────
+  envied: ^1.1.1
+
+  # ── Utilities ────────────────────────────────────────────────────────
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.15
+  envied_generator: ^1.1.1
+
+flutter:
+  uses-material-design: true

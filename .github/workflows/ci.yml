@@ -1,0 +1,77 @@
+name: VibeTalk CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ── Flutter (App) ─────────────────────────────────────────────────────
+  flutter:
+    name: Flutter Analyze & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.7'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run analyzer
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --coverage
+
+  # ── Backend (Node.js) ─────────────────────────────────────────────────
+  backend:
+    name: Backend Install & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      PORT: 3001
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/vibetalk_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci_test_jwt_secret_minimum_32_chars!!
+      JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_min_32!!
+      FIREBASE_PROJECT_ID: test-project
+      FIREBASE_PRIVATE_KEY: test-key
+      FIREBASE_CLIENT_EMAIL: test@test.iam.gserviceaccount.com
+      CLOUDFLARE_R2_BUCKET: test-bucket
+      CLOUDFLARE_R2_ACCESS_KEY: test-access-key
+      CLOUDFLARE_R2_SECRET_KEY: test-secret-key
+      CLOUDFLARE_R2_ENDPOINT: https://test.r2.cloudflarestorage.com
+      SENTRY_DSN: https://test@sentry.io/1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test

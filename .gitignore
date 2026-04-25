@@ -1,0 +1,87 @@
+# ═══════════════════════════════════════════════════════════════
+# VibeTalk — Combined .gitignore for Flutter + Node.js Monorepo
+# ═══════════════════════════════════════════════════════════════
+
+# ── OS Generated ──────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE / Editor ──────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.iml
+
+# ── Environment Variables ─────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# ═══════════════════════════════════════════════════════════════
+# Flutter / Dart (app/)
+# ═══════════════════════════════════════════════════════════════
+app/.dart_tool/
+app/.packages
+app/.pub/
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/pubspec.lock
+app/.metadata
+app/android/.gradle/
+app/android/local.properties
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
+app/android/key.properties
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Flutter/Generated.xcconfig
+app/ios/Flutter/app.flx
+app/ios/Flutter/engine/
+app/ios/ServiceDefinitions.json
+app/ios/Runner/GeneratedPluginRegistrant.*
+app/*.lock
+
+# Firebase config files (contain secrets)
+app/android/app/google-services.json
+app/ios/Runner/GoogleService-Info.plist
+
+# Generated env file
+app/lib/config/env.g.dart
+
+# ═══════════════════════════════════════════════════════════════
+# Node.js (backend/)
+# ═══════════════════════════════════════════════════════════════
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/logs/
+backend/coverage/
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+backend/.nyc_output/
+backend/package-lock.json
+
+# ── Misc ──────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig
+.cache/

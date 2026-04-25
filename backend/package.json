@@ -1,0 +1,47 @@
+{
+  "name": "vibetalk-backend",
+  "version": "1.0.0",
+  "description": "VibeTalk backend server — real-time messaging, calling, and media APIs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/",
+    "migrate": "node src/migrations/run.js"
+  },
+  "keywords": [
+    "vibetalk",
+    "messaging",
+    "webrtc",
+    "socket.io",
+    "e2ee"
+  ],
+  "author": "VibeTalk Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "pg": "^8.16.0",
+    "ioredis": "^5.6.1",
+    "dotenv": "^16.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^3.0.2",
+    "multer": "^1.4.5-lts.2",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "eslint": "^9.26.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
