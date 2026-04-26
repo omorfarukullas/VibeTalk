@@ -18,6 +18,20 @@ describe('Backend Smoke Tests', () => {
     process.env.CLOUDFLARE_R2_SECRET_KEY = 'test-secret-key';
     process.env.CLOUDFLARE_R2_ENDPOINT = 'https://test.r2.cloudflarestorage.com';
     process.env.SENTRY_DSN = 'https://test@sentry.io/1';
+
+    jest.mock('firebase-admin', () => ({
+      apps: [],
+      initializeApp: jest.fn(() => ({
+        auth: () => ({ verifyIdToken: jest.fn() }),
+      })),
+      credential: { cert: jest.fn() },
+    }));
+
+    jest.mock('@aws-sdk/client-s3', () => ({
+      S3Client: jest.fn(() => ({ send: jest.fn() })),
+      PutObjectCommand: jest.fn(),
+      DeleteObjectCommand: jest.fn(),
+    }));
   });
 
   test('app module loads without errors', () => {

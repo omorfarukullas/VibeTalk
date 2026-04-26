@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:vibetalk/config/theme.dart';
 import 'package:vibetalk/config/service_locator.dart';
 import 'package:vibetalk/routes/app_router.dart';
 import 'package:vibetalk/core/notifications/notification_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
 
 /// VibeTalk — End-to-end encrypted messaging and calling.
 ///
@@ -54,18 +57,21 @@ class VibeTalkApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      // ── App Identity ────────────────────────────────────────────────
-      title: 'VibeTalk',
-      debugShowCheckedModeBanner: false,
+    return BlocProvider(
+      create: (_) => sl<AuthBloc>(),
+      child: MaterialApp.router(
+        // ── App Identity ────────────────────────────────────────────────
+        title: 'VibeTalk',
+        debugShowCheckedModeBanner: false,
 
-      // ── Theme ───────────────────────────────────────────────────────
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+        // ── Theme ───────────────────────────────────────────────────────
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
 
-      // ── Navigation ──────────────────────────────────────────────────
-      routerConfig: appRouter,
+        // ── Navigation ──────────────────────────────────────────────────
+        routerConfig: appRouter,
+      ),
     );
   }
 }

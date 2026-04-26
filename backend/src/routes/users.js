@@ -1,23 +1,45 @@
+'use strict';
+
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const { uploadAvatarMiddleware } = require('../services/uploadService');
+const {
+  updateProfile,
+  uploadAvatar,
+  uploadKeys,
+  getKeys,
+  findContacts,
+} = require('../controllers/usersController');
 
 /**
- * GET /api/users
- * Placeholder — will return user list / search.
+ * PUT /api/users/profile
+ * Update name, bio, avatar_url.
  */
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      message: 'Users routes — Sprint 1',
-      endpoints: [
-        'GET /api/users/:id',
-        'PUT /api/users/:id',
-        'GET /api/users/search?phone=',
-        'DELETE /api/users/:id',
-      ],
-    },
-  });
-});
+router.put('/profile', authenticate, updateProfile);
+
+/**
+ * POST /api/users/avatar
+ * Multipart image upload → R2 → update avatar_url in DB.
+ */
+router.post('/avatar', authenticate, uploadAvatarMiddleware, uploadAvatar);
+
+/**
+ * POST /api/users/keys
+ * Store Signal Protocol public key bundle.
+ */
+router.post('/keys', authenticate, uploadKeys);
+
+/**
+ * GET /api/users/keys/:userId
+ * Retrieve public key bundle for a specific user.
+ */
+router.get('/keys/:userId', authenticate, getKeys);
+
+/**
+ * POST /api/users/contacts
+ * Check which phone numbers are registered VibeTalk users.
+ */
+router.post('/contacts', authenticate, findContacts);
 
 module.exports = router;

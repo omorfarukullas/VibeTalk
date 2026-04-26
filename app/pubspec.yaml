@@ -33,7 +33,7 @@ dependencies:
   get_it: ^8.0.3
 
   # ── Local Storage ────────────────────────────────────────────────────
-  hive: ^4.0.1
+  hive: ^2.2.3
   hive_flutter: ^1.1.0
 
   # ── Encryption ───────────────────────────────────────────────────────
@@ -57,6 +57,18 @@ dependencies:
   # ── Environment Variables ───────────────────────────────────────────
   envied: ^1.1.1
 
+  # ── Auth / Phone UI ─────────────────────────────────────────────────
+  country_code_picker: ^3.0.2
+
+  # ── Secure Storage (private encryption keys only) ───────────────────
+  flutter_secure_storage: ^9.2.2
+
+  # ── Image Compression ───────────────────────────────────────────────
+  flutter_image_compress: ^2.3.0
+
+  # ── JWT Decoding (expiry check without secret) ───────────────────────
+  jwt_decoder: ^2.0.1
+
   # ── Utilities ────────────────────────────────────────────────────────
   intl: ^0.20.2
 
@@ -67,6 +79,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.15
   envied_generator: ^1.1.1
+  mocktail: ^1.0.4
+  bloc_test: ^10.0.0
 
 flutter:
   uses-material-design: true

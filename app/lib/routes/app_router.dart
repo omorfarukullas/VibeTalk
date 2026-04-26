@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vibetalk/config/service_locator.dart';
+import 'package:vibetalk/core/storage/local_storage.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_event.dart';
 
-// ── Feature Screens (placeholders until Sprint 1+) ─────────────────────
-import 'package:vibetalk/features/auth/presentation/login_screen.dart';
-import 'package:vibetalk/features/auth/presentation/otp_screen.dart';
-import 'package:vibetalk/features/auth/presentation/profile_setup_screen.dart';
-import 'package:vibetalk/features/chat/presentation/chat_list_screen.dart';
-import 'package:vibetalk/features/chat/presentation/chat_detail_screen.dart';
-import 'package:vibetalk/features/calls/presentation/call_screen.dart';
-import 'package:vibetalk/features/calls/presentation/call_history_screen.dart';
-import 'package:vibetalk/features/groups/presentation/group_list_screen.dart';
-import 'package:vibetalk/features/groups/presentation/group_detail_screen.dart';
-import 'package:vibetalk/features/groups/presentation/create_group_screen.dart';
-import 'package:vibetalk/features/media/presentation/media_viewer_screen.dart';
-import 'package:vibetalk/features/media/presentation/camera_screen.dart';
-import 'package:vibetalk/features/profile/presentation/profile_screen.dart';
-import 'package:vibetalk/features/profile/presentation/edit_profile_screen.dart';
-import 'package:vibetalk/features/profile/presentation/settings_screen.dart';
+// ── Auth screens ───────────────────────────────────────────────────────
+import 'package:vibetalk/features/auth/presentation/screens/splash_screen.dart';
+import 'package:vibetalk/features/auth/presentation/screens/phone_input_screen.dart';
+import 'package:vibetalk/features/auth/presentation/screens/otp_verification_screen.dart';
+import 'package:vibetalk/features/auth/presentation/screens/profile_setup_screen.dart';
+
+// ── Main app screens ───────────────────────────────────────────────────
+import 'package:vibetalk/features/chat/presentation/screens/chat_list_screen.dart';
+import 'package:vibetalk/features/chat/presentation/screens/chat_detail_screen.dart';
+import 'package:vibetalk/features/calls/presentation/screens/call_screen.dart';
+import 'package:vibetalk/features/calls/presentation/screens/call_history_screen.dart';
+import 'package:vibetalk/features/groups/presentation/screens/group_list_screen.dart';
+import 'package:vibetalk/features/groups/presentation/screens/group_detail_screen.dart';
+import 'package:vibetalk/features/groups/presentation/screens/create_group_screen.dart';
+import 'package:vibetalk/features/media/presentation/screens/media_viewer_screen.dart';
+import 'package:vibetalk/features/media/presentation/screens/camera_screen.dart';
+import 'package:vibetalk/features/profile/presentation/screens/profile_screen.dart';
+import 'package:vibetalk/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:vibetalk/features/profile/presentation/screens/settings_screen.dart';
 import 'package:vibetalk/shared/widgets/shell_scaffold.dart';
 
-/// Application route paths — centralised for type-safe navigation.
+/// Centralised route path constants.
 abstract class RoutePaths {
+  static const String splash = '/';
   static const String login = '/login';
   static const String otp = '/otp';
   static const String profileSetup = '/profile-setup';
+  static const String home = '/home';
   static const String chats = '/chats';
   static const String chatDetail = '/chats/:chatId';
   static const String calls = '/calls';
@@ -38,29 +49,48 @@ abstract class RoutePaths {
   static const String settings = '/settings';
 }
 
-/// Global navigator key for GoRouter.
+/// Determines whether the current user is authenticated.
+bool _isAuthenticated() {
+  final storage = sl<LocalStorageService>();
+  return storage.getAccessToken() != null &&
+      storage.getAccessToken()!.isNotEmpty;
+}
+
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final GlobalKey<NavigatorState> _shellNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'shell');
 
-/// GoRouter configuration for the entire app.
+/// Application router.
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: RoutePaths.login,
+  initialLocation: RoutePaths.splash,
   debugLogDiagnostics: true,
   routes: [
-    // ── Auth Flow (no bottom nav) ─────────────────────────────────────
+    // ── Splash ──────────────────────────────────────────────────────────
+    GoRoute(
+      path: RoutePaths.splash,
+      name: 'splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
+
+    // ── Auth flow ────────────────────────────────────────────────────────
     GoRoute(
       path: RoutePaths.login,
       name: 'login',
-      builder: (context, state) => const LoginScreen(),
+      builder: (context, state) => const PhoneInputScreen(),
     ),
     GoRoute(
       path: RoutePaths.otp,
       name: 'otp',
-      builder: (context, state) => const OtpScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return OtpVerificationScreen(
+          verificationId: extra['verificationId'] as String? ?? '',
+          phoneNumber: extra['phoneNumber'] as String? ?? '',
+        );
+      },
     ),
     GoRoute(
       path: RoutePaths.profileSetup,
@@ -68,7 +98,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const ProfileSetupScreen(),
     ),
 
-    // ── Main App (with bottom nav shell) ──────────────────────────────
+    // ── Home (placeholder shell) ─────────────────────────────────────────
+    GoRoute(
+      path: RoutePaths.home,
+      name: 'home',
+      builder: (context, state) => const _HomeScreen(),
+    ),
+
+    // ── Main app with bottom nav shell ───────────────────────────────────
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) => ShellScaffold(child: child),
@@ -122,7 +159,7 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
 
-    // ── Full-Screen Overlays (no bottom nav) ──────────────────────────
+    // ── Full-screen overlays ─────────────────────────────────────────────
     GoRoute(
       path: '/calls/:callId',
       name: 'callActive',
@@ -154,9 +191,25 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 
-  // Redirect unauthenticated users to login
+  // ── Auth guard redirect ──────────────────────────────────────────────
   redirect: (context, state) {
-    // TODO: Sprint 1 — check auth state and redirect accordingly
+    final authenticated = _isAuthenticated();
+    final path = state.matchedLocation;
+
+    // Public paths that don't require auth
+    final publicPaths = ['/', '/login', '/otp', '/profile-setup'];
+    final isPublic = publicPaths.any((p) => path == p || path.startsWith(p));
+
+    // Redirect unauthenticated users away from protected routes
+    if (!authenticated && !isPublic) {
+      return RoutePaths.login;
+    }
+
+    // Redirect authenticated users away from login screen
+    if (authenticated && path == RoutePaths.login) {
+      return RoutePaths.home;
+    }
+
     return null;
   },
 
@@ -176,8 +229,62 @@ final GoRouter appRouter = GoRouter(
             state.uri.toString(),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => context.go(RoutePaths.home),
+            child: const Text('Go Home'),
+          ),
         ],
       ),
     ),
   ),
 );
+
+// ── Home screen placeholder ──────────────────────────────────────────────
+
+class _HomeScreen extends StatelessWidget {
+  const _HomeScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chat_bubble_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Home',
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sprint 2 will build this screen.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.5),
+                    ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<AuthBloc>().add(const LogoutEvent());
+                  context.go(RoutePaths.login);
+                },
+                child: const Text('Sign Out'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

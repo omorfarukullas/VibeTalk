@@ -38,12 +38,35 @@ class LocalStorageService {
     return _authBox.get('refresh_token') as String?;
   }
 
+  /// Save both tokens at once.
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    await _authBox.put('access_token', accessToken);
+    await _authBox.put('refresh_token', refreshToken);
+  }
+
   Future<void> saveUserId(String userId) async {
     await _authBox.put('user_id', userId);
   }
 
   String? getUserId() {
     return _authBox.get('user_id') as String?;
+  }
+
+  /// Save the user object (serialised as Map) to auth box.
+  Future<void> saveUser(Map<String, dynamic> userMap) async {
+    await _authBox.put('user', userMap);
+  }
+
+  /// Retrieve the cached user object, or null.
+  Map<String, dynamic>? getUser() {
+    final raw = _authBox.get('user');
+    if (raw == null) return null;
+    if (raw is Map<String, dynamic>) return raw;
+    // Hive may return Map<dynamic,dynamic> — cast safely
+    return Map<String, dynamic>.from(raw as Map);
   }
 
   Future<void> clearAuth() async {
