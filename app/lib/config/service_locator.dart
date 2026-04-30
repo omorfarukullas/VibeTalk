@@ -1,19 +1,16 @@
 import 'package:get_it/get_it.dart';
-import 'package:vibetalk/core/network/dio_client.dart';
+import 'package:vibetalk/core/network/api_client.dart';
 import 'package:vibetalk/core/network/socket_service.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
 import 'package:vibetalk/core/encryption/encryption_service.dart';
 import 'package:vibetalk/core/notifications/notification_service.dart';
 
 // Auth Feature
-import 'package:vibetalk/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:vibetalk/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:vibetalk/features/auth/domain/repositories/auth_repository.dart';
-import 'package:vibetalk/features/auth/domain/usecases/get_current_user_usecase.dart';
-import 'package:vibetalk/features/auth/domain/usecases/login_usecase.dart';
-import 'package:vibetalk/features/auth/domain/usecases/logout_usecase.dart';
-import 'package:vibetalk/features/auth/domain/usecases/register_usecase.dart';
+import 'package:vibetalk/features/auth/data/services/firebase_auth_service.dart';
+import 'package:vibetalk/features/auth/data/services/vibetalk_auth_service.dart';
+import 'package:vibetalk/features/auth/data/repositories/auth_repository.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Global service locator instance.
 final GetIt sl = GetIt.instance;
@@ -27,10 +24,15 @@ Future<void> initServiceLocator() async {
   final localStorage = LocalStorageService();
   await localStorage.init();
   sl.registerSingleton<LocalStorageService>(localStorage);
+  
+  // Secure Storage for JWTs
+  sl.registerLazySingleton<FlutterSecureStorage>(
+    () => const FlutterSecureStorage(),
+  );
 
   // Network — API client (Dio-based HTTP)
-  sl.registerLazySingleton<DioClient>(
-    () => DioClient(),
+  sl.registerLazySingleton<ApiClient>(
+    () => ApiClient(),
   );
 
   // Network — Socket.IO real-time connection
@@ -50,36 +52,26 @@ Future<void> initServiceLocator() async {
 
   // ── Auth Feature ────────────────────────────────────────────────────
 
-  // Datasources
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSource(sl<DioClient>().dio),
+  // Services
+  sl.registerLazySingleton<FirebaseAuthService>(
+    () => FirebaseAuthService(),
+  );
+  
+  sl.registerLazySingleton<VibeTalkAuthService>(
+    () => VibeTalkAuthService(apiClient: sl<ApiClient>()),
   );
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      remote: sl<AuthRemoteDataSource>(),
-      local: sl<LocalStorageService>(),
+    () => AuthRepository(
+      firebaseService: sl<FirebaseAuthService>(),
+      vibeTalkService: sl<VibeTalkAuthService>(),
+      secureStorage: sl<FlutterSecureStorage>(),
     ),
   );
 
-  // Use Cases
-  sl.registerLazySingleton(() => RegisterUseCase(sl()));
-  sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
-  sl.registerLazySingleton(() => LogoutUseCase(sl()));
-  sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
-  sl.registerLazySingleton(() => UploadAvatarUseCase(sl()));
-  sl.registerLazySingleton(() => UploadKeysUseCase(sl()));
-
   // BLoC
   sl.registerFactory(
-    () => AuthBloc(
-      register: sl(),
-      getCurrentUser: sl(),
-      logout: sl(),
-      updateProfile: sl(),
-      uploadAvatar: sl(),
-      uploadKeys: sl(),
-    ),
+    () => AuthBloc(sl<AuthRepository>()),
   );
 }

@@ -1,5 +1,7 @@
 const { Server } = require('socket.io');
 const logger = require('../utils/logger');
+const jwt = require('jsonwebtoken');
+const { redis } = require('../config/redis');
 
 /**
  * Initialize Socket.IO server with connection handling.
@@ -18,13 +20,42 @@ const initSocket = (httpServer) => {
     transports: ['websocket', 'polling'],
   });
 
+  // ── Authentication Middleware ─────────────────────────────────────────
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(new Error('Authentication error: Token required'));
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.user = {
+        id: decoded.id,
+        phone: decoded.phone,
+      };
+      next();
+    } catch (error) {
+      logger.error('Socket authentication failed', { error: error.message });
+      next(new Error('Authentication error: Invalid or expired token'));
+    }
+  });
+
   // ── Connection Handling ───────────────────────────────────────────────
-  io.on('connection', (socket) => {
-    const userId = socket.handshake.auth?.userId;
+  io.on('connection', async (socket) => {
+    const userId = socket.user.id;
     logger.info('Socket connected', {
       socketId: socket.id,
-      userId: userId || 'anonymous',
+      userId,
       transport: socket.conn.transport.name,
+    });
+
+    // Track presence in Redis
+    await redis.sadd(`user:${userId}:sockets`, socket.id);
+    
+    // Announce online status
+    socket.broadcast.emit('user_online', {
+      userId,
+      timestamp: new Date().toISOString(),
     });
 
     // ── Room Management ───────────────────────────────────────────────
@@ -125,25 +156,25 @@ const initSocket = (httpServer) => {
       });
     });
 
-    // ── Presence ──────────────────────────────────────────────────────
-    socket.on('user_online', () => {
-      socket.broadcast.emit('user_online', {
-        userId,
-        timestamp: new Date().toISOString(),
-      });
-    });
-
     // ── Disconnection ─────────────────────────────────────────────────
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', async (reason) => {
       logger.info('Socket disconnected', {
         socketId: socket.id,
-        userId: userId || 'anonymous',
+        userId,
         reason,
       });
-      socket.broadcast.emit('user_offline', {
-        userId,
-        timestamp: new Date().toISOString(),
-      });
+
+      // Remove socket from Redis
+      await redis.srem(`user:${userId}:sockets`, socket.id);
+      
+      // If no sockets left, user is fully offline
+      const activeSockets = await redis.scard(`user:${userId}:sockets`);
+      if (activeSockets === 0) {
+        socket.broadcast.emit('user_offline', {
+          userId,
+          timestamp: new Date().toISOString(),
+        });
+      }
     });
 
     // ── Error Handling ────────────────────────────────────────────────

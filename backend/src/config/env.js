@@ -7,29 +7,23 @@ dotenv.config();
  * Environment configuration — loads and validates all required
  * environment variables. Fails fast if any are missing.
  */
-const requiredVars = [
+const criticalVars = [
   'PORT',
   'DATABASE_URL',
-  'REDIS_URL',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
   'FIREBASE_PROJECT_ID',
   'FIREBASE_PRIVATE_KEY',
   'FIREBASE_CLIENT_EMAIL',
-  'CLOUDFLARE_R2_BUCKET',
-  'CLOUDFLARE_R2_ACCESS_KEY',
-  'CLOUDFLARE_R2_SECRET_KEY',
-  'CLOUDFLARE_R2_ENDPOINT',
-  'SENTRY_DSN',
 ];
 
-const missing = requiredVars.filter((key) => !process.env[key]);
+const missing = criticalVars.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
   console.error(
-    `❌ Missing required environment variables:\n  ${missing.join('\n  ')}`
+    `❌ Missing CRITICAL environment variables:\n  ${missing.join('\n  ')}`
   );
-  console.error('\nCopy .env.example to .env and fill in all values.');
+  console.error('\nPlease fill in these values in your .env file.');
   process.exit(1);
 }
 
@@ -53,7 +47,7 @@ const env = {
   // Firebase
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n').replace(/\r/g, ''),
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   },
 

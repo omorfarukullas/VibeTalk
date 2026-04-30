@@ -10,6 +10,8 @@ import 'package:vibetalk/core/notifications/notification_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
 
+import 'package:vibetalk/firebase_options.dart';
+
 /// VibeTalk — End-to-end encrypted messaging and calling.
 ///
 /// Entry point: initializes Firebase, Sentry, service locator,
@@ -19,7 +21,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize Sentry for error tracking
   await SentryFlutter.init(

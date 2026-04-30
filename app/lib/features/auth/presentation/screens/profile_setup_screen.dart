@@ -103,13 +103,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (!_isNameValid) return;
     FocusScope.of(context).unfocus();
 
-    context.read<AuthBloc>().add(
-          UpdateProfileEvent(
-            name: _nameController.text.trim(),
-            bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-            imageFile: _selectedImage,
-          ),
-        );
+    // TODO: Implement update profile in Sprint 2
+    // context.read<AuthBloc>().add(
+    //       UpdateProfileEvent(
+    //         name: _nameController.text.trim(),
+    //         bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+    //         imageFile: _selectedImage,
+    //       ),
+    //     );
+    context.go('/home');
   }
 
   @override
@@ -119,9 +121,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is ProfileUpdated) {
-          context.go('/home');
-        } else if (state is AuthError) {
+        if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),

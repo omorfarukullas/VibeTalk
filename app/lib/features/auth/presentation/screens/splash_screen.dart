@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // Dispatch auth check to BLoC
-    context.read<AuthBloc>().add(const CheckAuthStatusEvent());
+    context.read<AuthBloc>().add(CheckAuthStatusEvent());
   }
 
   @override
@@ -56,8 +56,6 @@ class _SplashScreenState extends State<SplashScreen>
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.go('/home');
-        } else if (state is AuthNewUser) {
-          context.go('/profile-setup');
         } else if (state is AuthUnauthenticated) {
           Future.delayed(
             const Duration(seconds: 2),
