@@ -48,4 +48,36 @@ const verifyFirebaseToken = async (idToken) => {
 // Initialise on module load
 initFirebase();
 
+/**
+ * Pre-warm the Firebase public key cache.
+ * Firebase Admin fetches JWT signing keys from googleapis.com on first
+ * verifyIdToken() call. If that happens during a cold-start race the
+ * request can ECONNREFUSED. We trigger a dummy verification here so the
+ * keys are cached before the first real login request arrives.
+ */
+const warmupFirebaseKeys = async (attempts = 5, delayMs = 1000) => {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      // This will throw argument-error (dummy token) but WILL fetch+cache the public keys.
+      // Do NOT swallow the error here — let the catch block decide.
+      await admin.auth().verifyIdToken('warmup-dummy-token');
+    } catch (err) {
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+        // Keys not fetched yet — retry with backoff
+        logger.warn(`Firebase key warmup attempt ${i + 1}/${attempts} — ECONNREFUSED, retrying in ${delayMs}ms`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        delayMs = Math.min(delayMs * 2, 8000);
+        continue;
+      }
+      // Any other error (argument-error, invalid-id-token, etc.) means
+      // the HTTPS key fetch succeeded — keys are now cached.
+      logger.info('✅ Firebase public key cache warmed up');
+      return;
+    }
+  }
+  logger.warn('⚠️  Firebase key warmup exhausted retries — first login may be slow');
+};
+
+warmupFirebaseKeys();
+
 module.exports = { verifyFirebaseToken, admin };

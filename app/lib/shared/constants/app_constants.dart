@@ -10,7 +10,7 @@ class AppConstants {
       'End-to-end encrypted messaging and calling';
 
   // ── API ─────────────────────────────────────────────────────────────
-  static const String apiBaseUrl = 'https://api.vibetalk.app';
+  static const String apiBaseUrl = 'http://192.168.0.105:3000/api/';
   static const String apiVersion = '/api/v1';
 
   // ── WebSocket Events ────────────────────────────────────────────────

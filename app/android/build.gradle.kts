@@ -1,7 +1,16 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.tasks.compile.JavaCompile
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.addAll(listOf("-language-version", "1.9"))
+        }
     }
 }
 

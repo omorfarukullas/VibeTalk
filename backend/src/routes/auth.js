@@ -8,9 +8,9 @@ const { authenticate } = require('../middleware/auth');
 
 /**
  * POST /api/auth/register
- * Client presents Firebase ID token → server verifies, creates/finds user, issues JWTs.
+ * Client presents Firebase ID token in body → server verifies, creates/finds user, issues JWTs.
  */
-router.post('/register', verifyFirebaseMiddleware, register);
+router.post('/register', register);
 
 /**
  * POST /api/auth/refresh

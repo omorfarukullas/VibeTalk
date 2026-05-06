@@ -102,8 +102,8 @@ class _AuthInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     // Skip injecting token when registering (client sends Firebase token)
-    if (options.path.contains('/auth/register') ||
-        options.path.contains('/auth/refresh')) {
+    if (options.path.contains('auth/register') ||
+        options.path.contains('auth/refresh')) {
       return handler.next(options);
     }
 
@@ -143,7 +143,7 @@ class _AuthInterceptor extends QueuedInterceptor {
       );
 
       final refreshResponse = await refreshDio.post(
-        '/auth/refresh',
+        'auth/refresh',
         data: {'refresh_token': refreshToken},
       );
 

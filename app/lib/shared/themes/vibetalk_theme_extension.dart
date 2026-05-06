@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 /// Theme extension for additional custom colors and styles
 /// used across VibeTalk that don't fit into the base ThemeData.

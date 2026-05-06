@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:vibetalk/core/errors/app_exception.dart';
-import 'package:vibetalk/features/auth/domain/entities/user_entity.dart';
 
 /// Remote datasource for auth — makes HTTP calls to the VibeTalk backend.
 class AuthRemoteDataSource {

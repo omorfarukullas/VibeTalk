@@ -11,7 +11,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    phone_number    VARCHAR(20) UNIQUE NOT NULL,
+    email           VARCHAR(255) UNIQUE NOT NULL,
+    firebase_uid    VARCHAR(128) UNIQUE NOT NULL,
     name            VARCHAR(100),
     avatar_url      TEXT,
     bio             TEXT,
@@ -21,8 +22,9 @@ CREATE TABLE users (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index for phone number lookup (login flow)
-CREATE INDEX idx_users_phone_number ON users (phone_number);
+-- Index for email lookup (login flow)
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_firebase_uid ON users (firebase_uid);
 
 -- Index for status filtering (admin panel)
 CREATE INDEX idx_users_status ON users (status);

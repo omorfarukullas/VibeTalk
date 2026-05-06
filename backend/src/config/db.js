@@ -7,12 +7,10 @@ const logger = require('../utils/logger');
  */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl: { rejectUnauthorized: false }, // Supabase requires SSL in all environments
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000, // Supabase pooler needs extra time on cold start
 });
 
 // Log pool errors

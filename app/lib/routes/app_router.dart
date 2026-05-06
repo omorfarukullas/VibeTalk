@@ -4,13 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:vibetalk/config/service_locator.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_event.dart';
 
 // ── Auth screens ───────────────────────────────────────────────────────
 import 'package:vibetalk/features/auth/presentation/screens/splash_screen.dart';
-import 'package:vibetalk/features/auth/presentation/screens/phone_input_screen.dart';
-import 'package:vibetalk/features/auth/presentation/screens/otp_verification_screen.dart';
+import 'package:vibetalk/features/auth/presentation/screens/login_screen.dart';
 import 'package:vibetalk/features/auth/presentation/screens/profile_setup_screen.dart';
 
 // ── Main app screens ───────────────────────────────────────────────────
@@ -32,7 +30,6 @@ import 'package:vibetalk/shared/widgets/shell_scaffold.dart';
 abstract class RoutePaths {
   static const String splash = '/';
   static const String login = '/login';
-  static const String otp = '/otp';
   static const String profileSetup = '/profile-setup';
   static const String home = '/home';
   static const String chats = '/chats';
@@ -79,18 +76,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RoutePaths.login,
       name: 'login',
-      builder: (context, state) => const PhoneInputScreen(),
-    ),
-    GoRoute(
-      path: RoutePaths.otp,
-      name: 'otp',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>? ?? {};
-        return OtpVerificationScreen(
-          verificationId: extra['verificationId'] as String? ?? '',
-          phoneNumber: extra['phoneNumber'] as String? ?? '',
-        );
-      },
+      builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
       path: RoutePaths.profileSetup,
@@ -197,7 +183,7 @@ final GoRouter appRouter = GoRouter(
     final path = state.matchedLocation;
 
     // Public paths that don't require auth
-    final publicPaths = ['/', '/login', '/otp', '/profile-setup'];
+    final publicPaths = ['/', '/login', '/profile-setup'];
     final isPublic = publicPaths.any((p) => path == p || path.startsWith(p));
 
     // Redirect unauthenticated users away from protected routes

@@ -1,12 +1,12 @@
+// Load and validate environment variables FIRST
+const env = require('./config/env');
+
 const http = require('http');
 const app = require('./app');
 const { initSocket } = require('./socket');
 const { testConnection: testDB } = require('./config/db');
 const { testConnection: testRedis } = require('./config/redis');
 const logger = require('./utils/logger');
-
-// Load and validate environment variables
-const env = require('./config/env');
 
 const PORT = env.port;
 

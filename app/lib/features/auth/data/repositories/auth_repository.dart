@@ -16,49 +16,46 @@ class AuthRepository {
         _vibeTalkService = vibeTalkService,
         _secureStorage = secureStorage;
 
-  /// Starts the phone verification process via Firebase
-  Future<void> sendOTP({
-    required String phoneNumber,
-    required Function(String verificationId, int? resendToken) codeSent,
-    required Function(FirebaseAuthException e) verificationFailed,
-    required Function(PhoneAuthCredential credential) verificationCompleted,
-    required Function(String verificationId) codeAutoRetrievalTimeout,
-  }) async {
-    await _firebaseService.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      codeSent: codeSent,
-      verificationFailed: verificationFailed,
-      verificationCompleted: verificationCompleted,
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
-    );
+  Future<void> loginWithGoogle() async {
+    final firebaseToken = await _firebaseService.signInWithGoogle();
+    if (firebaseToken == null) {
+      throw Exception('Google Sign-In canceled or failed.');
+    }
+    await _exchangeTokenAndSave(firebaseToken);
   }
 
-  /// Verifies the OTP, gets the Firebase token, and logs into VibeTalk backend
-  Future<void> verifyOTPAndLogin({
-    required String verificationId,
-    required String smsCode,
-  }) async {
-    // 1. Verify OTP with Firebase
-    final firebaseToken = await _firebaseService.verifyOTP(
-      verificationId: verificationId,
-      smsCode: smsCode,
+  Future<void> loginWithEmail(String email, String password) async {
+    final firebaseToken = await _firebaseService.signInWithEmailPassword(
+      email: email,
+      password: password,
     );
-
     if (firebaseToken == null) {
-      throw Exception('Failed to retrieve Firebase ID token.');
+      throw Exception('Email login failed.');
     }
+    await _exchangeTokenAndSave(firebaseToken);
+  }
 
-    // 2. Exchange Firebase token for VibeTalk JWT
+  Future<void> registerWithEmail(String email, String password) async {
+    final firebaseToken = await _firebaseService.signUpWithEmailPassword(
+      email: email,
+      password: password,
+    );
+    if (firebaseToken == null) {
+      throw Exception('Email registration failed.');
+    }
+    await _exchangeTokenAndSave(firebaseToken);
+  }
+
+  Future<void> _exchangeTokenAndSave(String firebaseToken) async {
+    // Exchange Firebase token for VibeTalk JWT
     final response = await _vibeTalkService.loginWithFirebaseToken(firebaseToken);
     
-    // 3. Save VibeTalk tokens securely
+    // Save VibeTalk tokens securely
     final tokens = response['tokens'];
     if (tokens != null) {
       await _secureStorage.write(key: 'access_token', value: tokens['accessToken']);
       await _secureStorage.write(key: 'refresh_token', value: tokens['refreshToken']);
     }
-
-    // TODO: Also save user data locally (id, username, etc.) if needed here
   }
 
   /// Logs the user out locally and from Firebase

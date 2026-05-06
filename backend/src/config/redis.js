@@ -5,11 +5,21 @@ const logger = require('../utils/logger');
  * Redis client using ioredis.
  * Connection string is read from REDIS_URL environment variable.
  */
+let _retryCount = 0;
+const MAX_RETRIES = 3;
+
 const redis = new Redis(process.env.REDIS_URL, {
   maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 1000,
   lazyConnect: true,
   enableReadyCheck: true,
+  retryStrategy: (times) => {
+    _retryCount = times;
+    if (times > MAX_RETRIES) {
+      // Stop retrying — Redis is unavailable
+      return null;
+    }
+    return Math.min(times * 200, 2000);
+  },
   reconnectOnError: (err) => {
     const targetErrors = ['READONLY', 'ECONNRESET', 'ECONNREFUSED'];
     return targetErrors.some((e) => err.message.includes(e));
@@ -42,22 +52,14 @@ redis.on('reconnecting', (delay) => {
  */
 const testConnection = async () => {
   try {
-    await redis.connect();
+    // Only call connect() if not already connected/connecting
+    if (redis.status === 'wait') {
+      await redis.connect();
+    }
     const pong = await redis.ping();
     logger.info('Redis connection verified', { response: pong });
     return true;
   } catch (error) {
-    // If already connected, just ping
-    if (error.message.includes('already')) {
-      try {
-        const pong = await redis.ping();
-        logger.info('Redis connection verified', { response: pong });
-        return true;
-      } catch (pingError) {
-        logger.error('Redis ping failed', { error: pingError.message });
-        return false;
-      }
-    }
     logger.error('Redis connection failed', { error: error.message });
     return false;
   }

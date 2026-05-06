@@ -12,7 +12,7 @@ class VibeTalkAuthService {
   Future<Map<String, dynamic>> loginWithFirebaseToken(String firebaseToken) async {
     try {
       final response = await _apiClient.dio.post(
-        '/auth/login',
+        'auth/register',
         data: {'firebaseToken': firebaseToken},
       );
       
@@ -34,7 +34,7 @@ class VibeTalkAuthService {
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     try {
       final response = await _apiClient.dio.post(
-        '/auth/refresh',
+        'auth/refresh',
         data: {'refreshToken': refreshToken},
       );
       

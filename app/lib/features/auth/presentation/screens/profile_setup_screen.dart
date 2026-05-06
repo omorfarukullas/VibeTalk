@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:vibetalk/features/auth/presentation/bloc/auth_event.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 
 class ProfileSetupScreen extends StatefulWidget {

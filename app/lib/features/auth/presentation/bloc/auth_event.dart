@@ -1,27 +1,19 @@
 abstract class AuthEvent {}
 
-class SendOtpEvent extends AuthEvent {
-  final String phoneNumber;
-  SendOtpEvent(this.phoneNumber);
+class LoginWithGoogleEvent extends AuthEvent {}
+
+class LoginWithEmailEvent extends AuthEvent {
+  final String email;
+  final String password;
+  LoginWithEmailEvent({required this.email, required this.password});
 }
 
-class VerifyOtpEvent extends AuthEvent {
-  final String verificationId;
-  final String smsCode;
-  VerifyOtpEvent({required this.verificationId, required this.smsCode});
+class RegisterWithEmailEvent extends AuthEvent {
+  final String email;
+  final String password;
+  RegisterWithEmailEvent({required this.email, required this.password});
 }
 
 class CheckAuthStatusEvent extends AuthEvent {}
 
 class LogoutEvent extends AuthEvent {}
-
-/// Internal events triggered by Firebase callbacks
-class CodeSentInternalEvent extends AuthEvent {
-  final String verificationId;
-  CodeSentInternalEvent(this.verificationId);
-}
-
-class AuthErrorInternalEvent extends AuthEvent {
-  final String message;
-  AuthErrorInternalEvent(this.message);
-}

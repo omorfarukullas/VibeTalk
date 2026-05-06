@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:vibetalk/shared/constants/app_constants.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
