@@ -14,14 +14,15 @@
 | **Backend** | Node.js + Express + Socket.IO |
 | **Database** | PostgreSQL (Supabase) |
 | **Cache** | Redis (Upstash) |
-| **File Storage** | Cloudflare R2 |
-| **Authentication** | Firebase Auth (Phone OTP) |
+| **File Storage** | Supabase Storage (S3-compatible) |
+| **Authentication** | Firebase Auth (Email & Google Sign-In) |
 | **Push Notifications** | Firebase Cloud Messaging (FCM) |
 | **Voice/Video/Screen Share** | WebRTC + Coturn (Google Cloud) |
 | **Encryption** | Signal Protocol (libsignal) |
 | **Backend Hosting** | Railway |
 | **CI/CD** | GitHub Actions |
 | **Error Tracking** | Sentry |
+
 
 ---
 
@@ -101,9 +102,11 @@ psql $DATABASE_URL -f backend/src/migrations/002_create_user_keys.sql
 psql $DATABASE_URL -f backend/src/migrations/003_create_chats.sql
 psql $DATABASE_URL -f backend/src/migrations/004_create_messages.sql
 psql $DATABASE_URL -f backend/src/migrations/005_create_media.sql
+psql $DATABASE_URL -f backend/src/migrations/005_add_group_details_to_chats.sql
 psql $DATABASE_URL -f backend/src/migrations/006_create_calls.sql
 psql $DATABASE_URL -f backend/src/migrations/007_create_groups.sql
 ```
+
 
 ---
 
@@ -118,10 +121,11 @@ psql $DATABASE_URL -f backend/src/migrations/007_create_groups.sql
 | `FIREBASE_MESSAGING_SENDER_ID` | FCM sender ID |
 | `FIREBASE_PROJECT_ID` | Firebase project ID |
 | `API_BASE_URL` | Backend API URL |
-| `CLOUDFLARE_R2_BUCKET` | R2 bucket name |
-| `CLOUDFLARE_R2_ACCESS_KEY` | R2 access key |
-| `CLOUDFLARE_R2_SECRET_KEY` | R2 secret key |
-| `CLOUDFLARE_R2_ENDPOINT` | R2 endpoint URL |
+| `CLOUDFLARE_R2_BUCKET` | Storage bucket name (Supabase/R2) |
+| `CLOUDFLARE_R2_ACCESS_KEY` | Storage access key |
+| `CLOUDFLARE_R2_SECRET_KEY` | Storage secret key |
+| `CLOUDFLARE_R2_ENDPOINT` | Storage S3 endpoint URL |
+| `CLOUDFLARE_R2_REGION` | Storage region (e.g., ap-northeast-1) |
 | `SENTRY_DSN` | Sentry error tracking DSN |
 
 ### Backend (`backend/.env`)
@@ -136,8 +140,9 @@ psql $DATABASE_URL -f backend/src/migrations/007_create_groups.sql
 | `FIREBASE_PROJECT_ID` | Firebase project ID |
 | `FIREBASE_PRIVATE_KEY` | Firebase admin private key |
 | `FIREBASE_CLIENT_EMAIL` | Firebase admin client email |
-| `CLOUDFLARE_R2_*` | R2 storage credentials |
+| `CLOUDFLARE_R2_*` | Storage credentials (Supabase/R2) |
 | `SENTRY_DSN` | Sentry error tracking DSN |
+
 
 ---
 
@@ -162,11 +167,12 @@ psql $DATABASE_URL -f backend/src/migrations/007_create_groups.sql
 | Sprint | Duration | Focus |
 |--------|----------|-------|
 | Sprint 0 | Week 0 | Project scaffolding & infrastructure setup |
-| Sprint 1 | Weeks 1-2 | Authentication (Firebase Phone OTP) |
+| Sprint 1 | Weeks 1-2 | Authentication (Email & Google Sign-In) |
 | Sprint 2 | Weeks 3-4 | Real-time messaging (E2EE) |
 | Sprint 3 | Weeks 5-6 | Voice/video calling (WebRTC) |
 | Sprint 4 | Weeks 7-8 | Groups & file sharing |
 | Sprint 5 | Weeks 9-10 | Polish, settings, notifications |
+
 
 ---
 
@@ -184,4 +190,4 @@ cd backend && npm test
 
 ## 📄 License
 
-This project is proprietary and unlicensed for public use.
+This project is open-source and unlicensed for public use.
