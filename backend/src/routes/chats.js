@@ -1,24 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const { getChats, createChat } = require('../controllers/chatsController');
 
 /**
  * GET /api/chats
- * Placeholder — will return user's chat list.
+ * Get all chats for the authenticated user.
  */
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      message: 'Chats routes — Sprint 2',
-      endpoints: [
-        'GET /api/chats',
-        'POST /api/chats',
-        'GET /api/chats/:id',
-        'DELETE /api/chats/:id',
-        'GET /api/chats/:id/participants',
-      ],
-    },
-  });
-});
+router.get('/', authenticate, getChats);
+
+/**
+ * POST /api/chats
+ * Create or get a direct chat.
+ */
+router.post('/', authenticate, createChat);
 
 module.exports = router;
+

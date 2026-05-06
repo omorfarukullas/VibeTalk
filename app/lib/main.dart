@@ -9,8 +9,10 @@ import 'package:vibetalk/routes/app_router.dart';
 import 'package:vibetalk/core/notifications/notification_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:vibetalk/features/chat/presentation/bloc/chat_bloc.dart';
 
 import 'package:vibetalk/firebase_options.dart';
+
 
 /// VibeTalk — End-to-end encrypted messaging and calling.
 ///
@@ -61,9 +63,13 @@ class VibeTalkApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<AuthBloc>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<AuthBloc>()),
+        BlocProvider(create: (_) => sl<ChatBloc>()..add(ConnectSocketEvent())..add(LoadChatsEvent())),
+      ],
       child: MaterialApp.router(
+
         // ── App Identity ────────────────────────────────────────────────
         title: 'VibeTalk',
         debugShowCheckedModeBanner: false,

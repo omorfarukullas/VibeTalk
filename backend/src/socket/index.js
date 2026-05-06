@@ -2,8 +2,10 @@ const { Server } = require('socket.io');
 const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const { redis } = require('../config/redis');
+const MessageModel = require('../models/Message');
 
 /**
+
  * Initialize Socket.IO server with connection handling.
  * @param {import('http').Server} httpServer
  * @returns {Server}
@@ -58,6 +60,21 @@ const initSocket = (httpServer) => {
       timestamp: new Date().toISOString(),
     });
 
+    // ── Token Refresh ─────────────────────────────────────────────────
+    socket.on('refresh_token', ({ token }, callback) => {
+      if (!token) return;
+      try {
+        const decoded = jwt.verify(token, env.jwtSecret);
+        socket.user = { id: decoded.userId };
+        logger.info('Socket token refreshed', { socketId: socket.id, userId: socket.user.id });
+        if (typeof callback === 'function') callback({ success: true });
+      } catch (error) {
+        logger.error('Socket token refresh failed', { socketId: socket.id, error: error.message });
+        if (typeof callback === 'function') callback({ success: false, error: 'Invalid token' });
+      }
+    });
+
+
     // ── Room Management ───────────────────────────────────────────────
     socket.on('join_room', ({ roomId }) => {
       if (!roomId) return;
@@ -82,16 +99,46 @@ const initSocket = (httpServer) => {
     });
 
     // ── Messaging ─────────────────────────────────────────────────────
-    socket.on('send_message', (data) => {
+    socket.on('send_message', async (data) => {
       const { roomId, message } = data;
-      if (!roomId || !message) return;
-      logger.debug('Message sent', { socketId: socket.id, roomId });
-      socket.to(roomId).emit('receive_message', {
-        ...message,
-        senderId: userId,
-        timestamp: new Date().toISOString(),
-      });
+      // Note: frontend currently sends data directly, not nested in `message`
+      // So let's handle if it's flat:
+      const payload = message || data;
+      const chatRoomId = payload.roomId || roomId;
+      
+      if (!chatRoomId || !payload.ciphertext) return;
+      
+      try {
+        // Persist message to database
+        const savedMessage = await MessageModel.create({
+          chat_id: chatRoomId,
+          sender_id: userId,
+          content: JSON.stringify({
+             ciphertext: payload.ciphertext,
+             iv: payload.iv,
+             sessionKey: payload.sessionKey,
+             text: payload.text, // Mock only
+             mediaUrl: payload.mediaUrl // Mock only for images
+          }),
+          message_type: payload.messageType || 'text',
+        });
+
+
+        logger.debug('Message persisted & sent', { socketId: socket.id, roomId: chatRoomId, msgId: savedMessage.id });
+        
+        // Broadcast to room
+        socket.to(chatRoomId).emit('receive_message', {
+          ...payload,
+          id: savedMessage.id, // Use DB generated UUID
+          senderId: userId,
+          status: 'sent',
+          timestamp: savedMessage.created_at,
+        });
+      } catch (err) {
+        logger.error('Failed to persist message', { error: err.message });
+      }
     });
+
 
     // ── Typing Indicators ─────────────────────────────────────────────
     socket.on('typing', ({ roomId, isTyping }) => {
@@ -104,25 +151,36 @@ const initSocket = (httpServer) => {
     });
 
     // ── Message Status ────────────────────────────────────────────────
-    socket.on('message_delivered', ({ messageId, roomId }) => {
+    socket.on('message_delivered', async ({ messageId, roomId }) => {
       if (!roomId || !messageId) return;
-      socket.to(roomId).emit('message_status', {
-        messageId,
-        status: 'delivered',
-        userId,
-        timestamp: new Date().toISOString(),
-      });
+      try {
+        await MessageModel.updateStatus(messageId, 'delivered');
+        socket.to(roomId).emit('message_status', {
+          messageId,
+          status: 'delivered',
+          userId,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.error('Failed to update delivered status', { error: err.message });
+      }
     });
 
-    socket.on('message_read', ({ messageId, roomId }) => {
+    socket.on('message_read', async ({ messageId, roomId }) => {
       if (!roomId || !messageId) return;
-      socket.to(roomId).emit('message_status', {
-        messageId,
-        status: 'read',
-        userId,
-        timestamp: new Date().toISOString(),
-      });
+      try {
+        await MessageModel.updateStatus(messageId, 'read');
+        socket.to(roomId).emit('message_status', {
+          messageId,
+          status: 'read',
+          userId,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.error('Failed to update read status', { error: err.message });
+      }
     });
+
 
     // ── WebRTC Call Signaling ─────────────────────────────────────────
     socket.on('call_offer', (data) => {

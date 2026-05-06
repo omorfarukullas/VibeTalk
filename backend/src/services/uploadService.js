@@ -8,8 +8,19 @@ const logger = require('../utils/logger');
 
 // ── Multer (memory storage) ──────────────────────────────────────────
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIME_TYPES = [
+  // Images
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  // Video
+  'video/mp4', 'video/quicktime', 'video/x-msvideo',
+  // Audio
+  'audio/mpeg', 'audio/wav', 'audio/aac', 'audio/ogg',
+  // Documents
+  'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain'
+];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 
 const multerUpload = multer({
   storage: multer.memoryStorage(),
@@ -32,6 +43,10 @@ const multerUpload = multer({
 
 /** Multer middleware for single avatar upload — field name: "avatar". */
 const uploadAvatarMiddleware = multerUpload.single('avatar');
+
+/** Multer middleware for single media upload — field name: "file". */
+const uploadMediaMiddleware = multerUpload.single('file');
+
 
 // ── Upload / Delete helpers ──────────────────────────────────────────
 
@@ -58,10 +73,14 @@ const uploadFile = async (buffer, fileName, mimeType, folder = 'uploads') => {
     }),
   );
 
-  // R2 public URL format — adjust if using a custom domain
-  const publicUrl = `${process.env.CLOUDFLARE_R2_ENDPOINT}/${bucket}/${key}`;
+  // Convert Supabase S3 API endpoint to the public URL format
+  // Example endpoint: https://<project>.supabase.co/storage/v1/s3
+  // Target public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<key>
+  const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT || '';
+  const baseUrl = endpoint.replace('/s3', '/object/public');
+  const publicUrl = `${baseUrl}/${bucket}/${key}`;
 
-  logger.info('File uploaded to R2', { key, size: buffer.length });
+  logger.info('File uploaded to storage', { key, size: buffer.length });
 
   return publicUrl;
 };
@@ -81,4 +100,5 @@ const deleteFile = async (key) => {
   logger.info('File deleted from R2', { key });
 };
 
-module.exports = { uploadFile, deleteFile, uploadAvatarMiddleware, multerUpload };
+module.exports = { uploadFile, deleteFile, uploadAvatarMiddleware, uploadMediaMiddleware, multerUpload };
+

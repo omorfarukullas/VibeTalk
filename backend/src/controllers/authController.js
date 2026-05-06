@@ -1,5 +1,3 @@
-'use strict';
-
 const jwt = require('jsonwebtoken');
 const { getAuth } = require('firebase-admin/auth');
 const { pool } = require('../config/db');
@@ -10,46 +8,18 @@ const logger = require('../utils/logger');
  * Generate Access and Refresh Tokens
  */
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
-  const refreshToken = jwt.sign({ userId }, env.jwtRefreshSecret, { expiresIn: env.jwtRefreshExpiresIn });
+  const accessToken = jwt.sign({ userId }, env.jwtSecret, {
+    expiresIn: env.jwtExpiresIn,
+  });
+  const refreshToken = jwt.sign({ userId }, env.jwtRefreshSecret, {
+    expiresIn: env.jwtRefreshExpiresIn,
+  });
   return { accessToken, refreshToken };
 };
 
 /**
- * Helper: verify Firebase token and upsert user in DB.
- * Returns { user, tokens } on success, throws on failure.
- */
-const verifyAndUpsert = async (firebaseToken) => {
-  const decodedToken = await getAuth().verifyIdToken(firebaseToken);
-  const email = decodedToken.email;
-  const uid = decodedToken.uid;
-
-  if (!email) throw new Error('TOKEN_NO_EMAIL');
-
-  const userQuery = await pool.query(
-    'SELECT * FROM users WHERE firebase_uid = $1 OR email = $2',
-    [uid, email]
-  );
-  let user = userQuery.rows[0];
-
-  if (!user) {
-    const insertResult = await pool.query(
-      'INSERT INTO users (email, firebase_uid, status) VALUES ($1, $2, $3) RETURNING *',
-      [email, uid, 'active']
-    );
-    user = insertResult.rows[0];
-    logger.info(`New user registered: ${user.id}`);
-  }
-
-  const tokens = generateTokens(user.id);
-  await pool.query('UPDATE users SET last_seen = NOW() WHERE id = $1', [user.id]);
-
-  return { user, tokens };
-};
-
-/**
+ * Login or Register user via Firebase Phone Auth Token
  * POST /api/auth/register
- * Client presents Firebase ID token → server verifies, upserts user, issues JWTs.
  */
 const register = async (req, res) => {
   const { firebaseToken } = req.body;
@@ -59,88 +29,114 @@ const register = async (req, res) => {
   }
 
   try {
-    const { user, tokens } = await verifyAndUpsert(firebaseToken);
-    return res.status(200).json({
+    // 1. Verify the Firebase token
+    const decodedToken = await getAuth().verifyIdToken(firebaseToken);
+    const email = decodedToken.email;
+    const uid = decodedToken.uid;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Token does not contain an email address' });
+    }
+
+    // 2. Check if user exists in our PostgreSQL database
+    const userQuery = await pool.query('SELECT * FROM users WHERE firebase_uid = $1 OR email = $2', [uid, email]);
+    let user = userQuery.rows[0];
+
+    // 3. If user doesn't exist, create them (Registration)
+    if (!user) {
+      const insertQuery = await pool.query(
+        'INSERT INTO users (email, firebase_uid, status) VALUES ($1, $2, $3) RETURNING *',
+        [email, uid, 'active']
+      );
+      user = insertQuery.rows[0];
+      logger.info(`New user registered: ${user.id}`);
+    }
+
+    // 4. Generate VibeTalk JWTs
+    const tokens = generateTokens(user.id);
+
+    // 5. Update user's last_seen
+    await pool.query('UPDATE users SET last_seen = NOW() WHERE id = $1', [user.id]);
+
+    res.status(200).json({
       message: 'Login successful',
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         avatarUrl: user.avatar_url,
-        isProfileComplete: !!user.name,
+        isProfileComplete: !!user.name, // True if they have set a display name
       },
       tokens,
     });
   } catch (error) {
-    // Retry once on ECONNREFUSED — Firebase public key cache cold-start race condition
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      logger.warn('Firebase key cache miss — retrying in 1.5s...');
-      try {
-        await new Promise((r) => setTimeout(r, 1500));
-        const { user, tokens } = await verifyAndUpsert(firebaseToken);
-        return res.status(200).json({
-          message: 'Login successful',
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            avatarUrl: user.avatar_url,
-            isProfileComplete: !!user.name,
-          },
-          tokens,
-        });
-      } catch (retryErr) {
-        logger.error('Login retry failed', { errorCode: retryErr.code, errorMessage: retryErr.message });
-        return res.status(503).json({ error: 'Auth service temporarily unavailable. Please try again.' });
-      }
-    }
-
-    logger.error('Login error', {
-      errorCode: error.code,
-      errorMessage: error.message,
-      tokenPreview: firebaseToken ? firebaseToken.substring(0, 50) + '...' : 'MISSING',
-    });
-    return res.status(401).json({ error: 'Invalid or expired Firebase token', detail: error.code });
+    logger.error('Login error', { error: error.message });
+    res.status(401).json({ error: 'Invalid or expired Firebase token' });
   }
 };
 
 /**
+ * Refresh Access Token
  * POST /api/auth/refresh
  */
 const refresh = async (req, res) => {
   const { refreshToken } = req.body;
-  if (!refreshToken) return res.status(400).json({ error: 'Refresh token is required' });
+
+  if (!refreshToken) {
+    return res.status(400).json({ error: 'Refresh token is required' });
+  }
 
   try {
+    // Verify the refresh token
     const decoded = jwt.verify(refreshToken, env.jwtRefreshSecret);
+    
+    // Generate new tokens
     const tokens = generateTokens(decoded.userId);
-    return res.status(200).json(tokens);
+
+    res.status(200).json(tokens);
   } catch (error) {
     logger.error('Token refresh error', { error: error.message });
-    return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
   }
 };
 
 /**
+ * Logout User
  * POST /api/auth/logout
  */
 const logout = async (req, res) => {
+  // In a real implementation, we would blacklist the refresh token in Redis
   res.status(200).json({ message: 'Logged out successfully' });
 };
 
 /**
+ * Get Current User
  * GET /api/auth/me
  */
 const getMe = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.userId]);
-    const user = result.rows[0];
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    return res.status(200).json({ id: user.id, email: user.email, name: user.name, avatarUrl: user.avatar_url });
+    const userQuery = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const user = userQuery.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatar_url,
+    });
   } catch (error) {
     logger.error('Get profile error', { error: error.message });
-    return res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-module.exports = { register, refresh, logout, getMe };
+module.exports = {
+  register,
+  refresh,
+  logout,
+  getMe,
+};

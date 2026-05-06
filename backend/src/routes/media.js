@@ -1,23 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const { uploadMediaMiddleware } = require('../services/uploadService');
+const { uploadMedia } = require('../controllers/mediaController');
 
 /**
- * GET /api/media
- * Placeholder — will handle file upload/download via Cloudflare R2.
+ * POST /api/media/upload
+ * Upload a media file to Cloudflare R2.
  */
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      message: 'Media routes — Sprint 3',
-      endpoints: [
-        'POST /api/media/upload',
-        'GET /api/media/:id',
-        'DELETE /api/media/:id',
-        'GET /api/media/:id/download',
-      ],
-    },
-  });
-});
+router.post('/upload', authenticate, uploadMediaMiddleware, uploadMedia);
 
 module.exports = router;
+

@@ -193,8 +193,9 @@ final GoRouter appRouter = GoRouter(
 
     // Redirect authenticated users away from login screen
     if (authenticated && path == RoutePaths.login) {
-      return RoutePaths.home;
+      return RoutePaths.chats;
     }
+
 
     return null;
   },
@@ -217,9 +218,10 @@ final GoRouter appRouter = GoRouter(
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => context.go(RoutePaths.home),
+            onPressed: () => context.go(RoutePaths.chats),
             child: const Text('Go Home'),
           ),
+
         ],
       ),
     ),

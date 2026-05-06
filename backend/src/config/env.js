@@ -51,13 +51,15 @@ const env = {
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   },
 
-  // Cloudflare R2
+  // Storage (S3-compatible — Supabase, R2, MinIO)
   r2: {
     bucket: process.env.CLOUDFLARE_R2_BUCKET,
     accessKey: process.env.CLOUDFLARE_R2_ACCESS_KEY,
     secretKey: process.env.CLOUDFLARE_R2_SECRET_KEY,
     endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
+    region: process.env.CLOUDFLARE_R2_REGION || 'auto',
   },
+
 
   // Sentry
   sentryDsn: process.env.SENTRY_DSN,

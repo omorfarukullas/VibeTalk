@@ -21,8 +21,9 @@ const UserKeyModel = {
          prekey_bundle = EXCLUDED.prekey_bundle,
          created_at    = NOW()
        RETURNING *`,
-      [user_id, identity_key, signed_prekey, prekey_bundle ? JSON.stringify(prekey_bundle) : null],
+      [user_id, identity_key, typeof signed_prekey === 'object' ? JSON.stringify(signed_prekey) : signed_prekey, prekey_bundle ? JSON.stringify(prekey_bundle) : null],
     );
+
     return result.rows[0];
   },
 

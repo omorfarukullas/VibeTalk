@@ -180,4 +180,37 @@ const findContacts = async (req, res, next) => {
   }
 };
 
-module.exports = { updateProfile, uploadAvatar, uploadKeys, getKeys, findContacts };
+/**
+ * GET /api/users/search?q=...
+ * Search users by name or email.
+ */
+const searchUsers = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return next(new AppError('Search query must be at least 2 characters.', 400, 'VALIDATION_ERROR'));
+    }
+
+    const queryStr = `%${q.trim()}%`;
+    
+    const result = await query(
+      `SELECT id, name, email, avatar_url 
+       FROM users 
+       WHERE (name ILIKE $1 OR email ILIKE $1) 
+       AND id != $2
+       LIMIT 20`,
+      [queryStr, req.user.id]
+    );
+
+    return res.json({
+      success: true,
+      data: { users: result.rows },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { updateProfile, uploadAvatar, uploadKeys, getKeys, findContacts, searchUsers };
+

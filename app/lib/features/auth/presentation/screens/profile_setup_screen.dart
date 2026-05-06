@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_event.dart';
+import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
+
 import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -33,7 +36,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _nameController.addListener(() {
       final trimmed = _nameController.text.trim();
       setState(
-        () => _isNameValid = trimmed.length >= 2 && trimmed.length <= _maxNameLength,
+        () => _isNameValid =
+            trimmed.length >= 2 && trimmed.length <= _maxNameLength,
       );
     });
   }
@@ -82,12 +86,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(Icons.camera_alt_rounded, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.camera_alt_rounded,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('Take Photo'),
               onTap: () => _pickImage(ImageSource.camera),
             ),
             ListTile(
-              leading: Icon(Icons.photo_library_rounded, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.photo_library_rounded,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () => _pickImage(ImageSource.gallery),
             ),
@@ -102,16 +112,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (!_isNameValid) return;
     FocusScope.of(context).unfocus();
 
-    // TODO: Implement update profile in Sprint 2
-    // context.read<AuthBloc>().add(
-    //       UpdateProfileEvent(
-    //         name: _nameController.text.trim(),
-    //         bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-    //         imageFile: _selectedImage,
-    //       ),
-    //     );
-    context.go('/home');
+    context.read<AuthBloc>().add(
+          UpdateProfileEvent(
+            name: _nameController.text.trim(),
+            bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+            imagePath: _selectedImage?.path,
+          ),
+        );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +129,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthError) {
+        if (state is AuthAuthenticated) {
+          context.go('/chats');
+        } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -133,6 +144,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           );
         }
       },
+
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
@@ -231,8 +243,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       prefixIcon: const Icon(Icons.person_outline_rounded),
                       counterText: '',
                       suffixIcon: _isNameValid
-                          ? Icon(Icons.check_circle_rounded,
-                              color: Colors.green.shade400, size: 20)
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.green.shade400,
+                              size: 20,
+                            )
                           : null,
                     ),
                     onSubmitted: (_) => _bioFocus.requestFocus(),
@@ -272,7 +287,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         opacity: _isNameValid ? 1.0 : 0.4,
                         duration: const Duration(milliseconds: 200),
                         child: ElevatedButton(
-                          onPressed: (_isNameValid && !isLoading) ? _onDone : null,
+                          onPressed: (_isNameValid && !isLoading)
+                              ? _onDone
+                              : null,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(

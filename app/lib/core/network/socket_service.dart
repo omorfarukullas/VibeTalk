@@ -19,7 +19,7 @@ class SocketService {
     final token = storage.getAccessToken();
 
     _socket = io.io(
-      AppConstants.apiBaseUrl,
+      AppConstants.socketBaseUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -29,6 +29,7 @@ class SocketService {
           .setReconnectionDelay(2000)
           .build(),
     );
+
 
     _socket!.connect();
 

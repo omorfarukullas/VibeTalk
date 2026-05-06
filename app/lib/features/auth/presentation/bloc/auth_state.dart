@@ -11,6 +11,9 @@ class AuthCodeSent extends AuthState {
 
 class AuthAuthenticated extends AuthState {}
 
+class AuthProfileIncomplete extends AuthState {}
+
+
 class AuthUnauthenticated extends AuthState {}
 
 class AuthError extends AuthState {

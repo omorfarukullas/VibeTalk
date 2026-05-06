@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _submit() {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    
+
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter both email and password')),
@@ -37,9 +37,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (_isLogin) {
-      context.read<AuthBloc>().add(LoginWithEmailEvent(email: email, password: password));
+      context.read<AuthBloc>().add(
+        LoginWithEmailEvent(email: email, password: password),
+      );
     } else {
-      context.read<AuthBloc>().add(RegisterWithEmailEvent(email: email, password: password));
+      context.read<AuthBloc>().add(
+        RegisterWithEmailEvent(email: email, password: password),
+      );
     }
   }
 
@@ -50,16 +54,19 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            context.go(RoutePaths.home);
+            context.go(RoutePaths.chats);
+          } else if (state is AuthProfileIncomplete) {
+            context.go('/profile-setup');
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: SafeArea(
@@ -127,19 +134,34 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _isLogin = !_isLogin;
                               });
                             },
-                            child: Text(_isLogin 
-                              ? "Don't have an account? Sign Up" 
-                              : "Already have an account? Sign In"),
+                            child: Text(
+                              _isLogin
+                                  ? "Don't have an account? Sign Up"
+                                  : "Already have an account? Sign In",
+                            ),
                           ),
                           const SizedBox(height: 24),
                           Row(
                             children: [
-                              Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('OR', style: theme.textTheme.bodySmall),
+                              Expanded(
+                                child: Divider(
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
                               ),
-                              Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  'OR',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 24),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// Bottom navigation shell for the main app screens.
 /// Used as the builder for the ShellRoute in GoRouter.
@@ -41,7 +42,7 @@ class ShellScaffold extends StatelessWidget {
   }
 
   int _calculateSelectedIndex(BuildContext context) {
-    final location = Uri.base.path;
+    final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/calls')) return 1;
     if (location.startsWith('/groups')) return 2;
     if (location.startsWith('/profile')) return 3;
@@ -51,23 +52,18 @@ class ShellScaffold extends StatelessWidget {
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        _navigateTo('/chats', context);
+        context.go('/chats');
         break;
       case 1:
-        _navigateTo('/calls', context);
+        context.go('/calls');
         break;
       case 2:
-        _navigateTo('/groups', context);
+        context.go('/groups');
         break;
       case 3:
-        _navigateTo('/profile', context);
+        context.go('/profile');
         break;
     }
   }
-
-  void _navigateTo(String path, BuildContext context) {
-    // Use GoRouter for navigation
-    // GoRouter.of(context).go(path);
-    // TODO: Sprint 1 — uncomment GoRouter navigation after auth flow is set
-  }
 }
+

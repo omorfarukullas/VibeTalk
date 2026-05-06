@@ -1,23 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const { getMessages } = require('../controllers/messagesController');
 
 /**
- * GET /api/messages
- * Placeholder — will return messages for a chat.
+ * GET /api/messages?chatId=...
+ * Get historical messages for a chat.
  */
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      message: 'Messages routes — Sprint 2',
-      endpoints: [
-        'GET /api/messages?chatId=',
-        'POST /api/messages',
-        'DELETE /api/messages/:id',
-        'PATCH /api/messages/:id/status',
-      ],
-    },
-  });
-});
+router.get('/', authenticate, getMessages);
 
 module.exports = router;
+

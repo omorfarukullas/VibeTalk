@@ -10,7 +10,15 @@ const {
   uploadKeys,
   getKeys,
   findContacts,
+  searchUsers,
 } = require('../controllers/usersController');
+
+/**
+ * GET /api/users/search
+ * Search users by name or email.
+ */
+router.get('/search', authenticate, searchUsers);
+
 
 /**
  * PUT /api/users/profile

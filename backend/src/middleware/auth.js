@@ -19,10 +19,11 @@ const authenticate = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
-      id: decoded.id,
+      id: decoded.userId,
       phone: decoded.phone,
     };
     next();
+
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       throw new AppError('Token has expired. Please refresh your session.', 401, 'TOKEN_EXPIRED');
@@ -51,10 +52,11 @@ const optionalAuth = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
-      id: decoded.id,
+      id: decoded.userId,
       phone: decoded.phone,
     };
   } catch {
+
     // Silently ignore invalid tokens in optional auth
   }
 

@@ -3,7 +3,9 @@ import 'package:vibetalk/core/network/api_client.dart';
 import 'package:vibetalk/core/network/socket_service.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
 import 'package:vibetalk/core/encryption/encryption_service.dart';
+import 'package:vibetalk/core/encryption/keys_service.dart';
 import 'package:vibetalk/core/notifications/notification_service.dart';
+
 
 // Auth Feature
 import 'package:vibetalk/features/auth/data/services/firebase_auth_service.dart';
@@ -11,6 +13,18 @@ import 'package:vibetalk/features/auth/data/services/vibetalk_auth_service.dart'
 import 'package:vibetalk/features/auth/data/repositories/auth_repository.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+// Chat Feature
+import 'package:vibetalk/features/chat/data/repositories/chat_repository.dart';
+import 'package:vibetalk/features/chat/data/repositories/media_repository.dart';
+import 'package:vibetalk/features/chat/presentation/bloc/chat_bloc.dart';
+
+
+// Group Feature
+import 'package:vibetalk/features/groups/data/repositories/group_repository.dart';
+
+
+
 
 /// Global service locator instance.
 final GetIt sl = GetIt.instance;
@@ -45,6 +59,12 @@ Future<void> initServiceLocator() async {
     () => EncryptionService(),
   );
 
+  // Encryption — Signal Key Service
+  sl.registerLazySingleton<KeysService>(
+    () => KeysService(apiClient: sl<ApiClient>()),
+  );
+
+
   // Push notifications — FCM handler
   sl.registerLazySingleton<NotificationService>(
     () => NotificationService(),
@@ -72,6 +92,33 @@ Future<void> initServiceLocator() async {
 
   // BLoC
   sl.registerFactory(
-    () => AuthBloc(sl<AuthRepository>()),
+    () => AuthBloc(sl<AuthRepository>(), sl<KeysService>()),
+  );
+
+  // ── Chat Feature ────────────────────────────────────────────────────
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepository(apiClient: sl<ApiClient>()),
+  );
+  sl.registerLazySingleton<MediaRepository>(
+    () => MediaRepository(apiClient: sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<ChatBloc>(
+
+    () => ChatBloc(
+      socketService: sl<SocketService>(),
+      encryptionService: sl<EncryptionService>(),
+      localStorage: sl<LocalStorageService>(),
+      chatRepository: sl<ChatRepository>(),
+    ),
+  );
+
+  // ── Group Feature ───────────────────────────────────────────────────
+  sl.registerLazySingleton<GroupRepository>(
+    () => GroupRepository(apiClient: sl<ApiClient>()),
   );
 }
+
+
+
+

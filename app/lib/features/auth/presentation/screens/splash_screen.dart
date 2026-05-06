@@ -52,14 +52,15 @@ class _SplashScreenState extends State<SplashScreen>
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          context.go('/home');
+          context.go('/chats');
+        } else if (state is AuthProfileIncomplete) {
+          context.go('/profile-setup');
+
         } else if (state is AuthUnauthenticated) {
-          Future.delayed(
-            const Duration(seconds: 2),
-            () {
-              if (mounted) context.go('/login');
-            },
-          );
+
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) context.go('/login');
+          });
         }
       },
       child: Scaffold(

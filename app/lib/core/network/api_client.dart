@@ -2,7 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:vibetalk/shared/constants/app_constants.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
 import 'package:vibetalk/config/service_locator.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:vibetalk/core/errors/app_exception.dart';
+
+
 
 /// Dio-based HTTP client with interceptors for authentication,
 /// logging, and error transformation.
@@ -24,10 +27,11 @@ class ApiClient {
     );
 
     _dio.interceptors.addAll([
-      _AuthInterceptor(),
       _LoggingInterceptor(),
+      _AuthInterceptor(),
       _ErrorInterceptor(),
     ]);
+
   }
 
   Dio get dio => _dio;
@@ -99,24 +103,60 @@ class ApiClient {
 // ── Interceptors ──────────────────────────────────────────────────────
 
 /// Attaches JWT access token to every outgoing request.
+/// Reads synchronously from Hive to avoid async-void issues with Dio.
 class _AuthInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final storage = sl<LocalStorageService>();
-    final token = storage.getAccessToken();
+    // Synchronous read — Hive supports this without async
+    final token = sl<LocalStorageService>().getAccessToken();
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
   }
 
+
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // TODO: Sprint 1 — refresh token logic
+      final secureStorage = sl<FlutterSecureStorage>();
+      final refreshToken = await secureStorage.read(key: 'refresh_token');
+
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        try {
+          // Use a plain Dio instance (no interceptors) to avoid infinite loops
+          final plainDio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
+          final refreshResponse = await plainDio.post(
+            'auth/refresh',
+            data: {'refreshToken': refreshToken},
+          );
+
+          final newAccessToken = refreshResponse.data['accessToken'];
+          final newRefreshToken = refreshResponse.data['refreshToken'];
+
+          if (newAccessToken != null) {
+            await secureStorage.write(key: 'access_token', value: newAccessToken);
+            // Also update Hive for synchronous reads in the interceptor
+            await sl<LocalStorageService>().saveAccessToken(newAccessToken);
+            if (newRefreshToken != null) {
+              await secureStorage.write(key: 'refresh_token', value: newRefreshToken);
+            }
+
+            final retryOptions = err.requestOptions;
+            retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+            final retryResponse = await plainDio.fetch(retryOptions);
+            return handler.resolve(retryResponse);
+          }
+
+        } catch (_) {
+          // Refresh failed — fall through to propagate the 401
+        }
+      }
     }
     handler.next(err);
   }
+
+
 }
 
 /// Logs request & response details in debug mode.
@@ -144,9 +184,14 @@ class _LoggingInterceptor extends Interceptor {
 }
 
 /// Transforms Dio errors into application-specific exceptions.
+/// Skips 401 errors — those are handled by _AuthInterceptor (token refresh).
 class _ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    // 401 is handled by _AuthInterceptor (token refresh + retry). Let it pass.
+    if (err.response?.statusCode == 401) {
+      return handler.next(err);
+    }
     switch (err.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -168,3 +213,4 @@ class _ErrorInterceptor extends Interceptor {
     }
   }
 }
+

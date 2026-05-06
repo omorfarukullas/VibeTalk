@@ -11,7 +11,10 @@ class AppConstants {
 
   // ── API ─────────────────────────────────────────────────────────────
   static const String apiBaseUrl = 'http://192.168.0.105:3000/api/';
+  // Socket.IO must connect to server root, not /api/
+  static const String socketBaseUrl = 'http://192.168.0.105:3000';
   static const String apiVersion = '/api/v1';
+
 
   // ── WebSocket Events ────────────────────────────────────────────────
   static const String eventSendMessage = 'send_message';

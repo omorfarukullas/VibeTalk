@@ -16,4 +16,12 @@ class RegisterWithEmailEvent extends AuthEvent {
 
 class CheckAuthStatusEvent extends AuthEvent {}
 
+class UpdateProfileEvent extends AuthEvent {
+  final String name;
+  final String? bio;
+  final String? imagePath;
+  UpdateProfileEvent({required this.name, this.bio, this.imagePath});
+}
+
 class LogoutEvent extends AuthEvent {}
+
