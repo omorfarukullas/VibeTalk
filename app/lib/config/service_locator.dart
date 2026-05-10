@@ -23,6 +23,10 @@ import 'package:vibetalk/features/chat/presentation/bloc/chat_bloc.dart';
 // Group Feature
 import 'package:vibetalk/features/groups/data/repositories/group_repository.dart';
 
+// Friend Feature
+import 'package:vibetalk/features/friends/data/repositories/friend_repository.dart';
+import 'package:vibetalk/features/friends/presentation/bloc/friend_bloc.dart';
+
 
 
 
@@ -116,6 +120,14 @@ Future<void> initServiceLocator() async {
   // ── Group Feature ───────────────────────────────────────────────────
   sl.registerLazySingleton<GroupRepository>(
     () => GroupRepository(apiClient: sl<ApiClient>()),
+  );
+
+  // ── Friend Feature ──────────────────────────────────────────────────
+  sl.registerLazySingleton<FriendRepository>(
+    () => FriendRepository(apiClient: sl<ApiClient>()),
+  );
+  sl.registerFactory<FriendBloc>(
+    () => FriendBloc(repository: sl<FriendRepository>()),
   );
 }
 

@@ -15,6 +15,7 @@ const messageRoutes = require('./routes/messages');
 const groupRoutes = require('./routes/groups');
 const mediaRoutes = require('./routes/media');
 const callRoutes = require('./routes/calls');
+const friendRoutes = require('./routes/friends');
 
 /**
  * Express application setup.
@@ -63,6 +64,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/friends', friendRoutes);
 
 // ── Error Handling ──────────────────────────────────────────────────────
 app.use(notFoundHandler);

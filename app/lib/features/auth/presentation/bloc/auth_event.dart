@@ -18,9 +18,10 @@ class CheckAuthStatusEvent extends AuthEvent {}
 
 class UpdateProfileEvent extends AuthEvent {
   final String name;
+  final String username;
   final String? bio;
   final String? imagePath;
-  UpdateProfileEvent({required this.name, this.bio, this.imagePath});
+  UpdateProfileEvent({required this.name, required this.username, this.bio, this.imagePath});
 }
 
 class LogoutEvent extends AuthEvent {}

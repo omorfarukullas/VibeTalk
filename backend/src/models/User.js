@@ -52,7 +52,7 @@ const UserModel = {
    * @param {object} updates — e.g. { name, bio, avatar_url }
    */
   update: async (id, updates) => {
-    const allowedFields = ['name', 'bio', 'avatar_url', 'status', 'last_seen'];
+    const allowedFields = ['name', 'bio', 'avatar_url', 'status', 'last_seen', 'username'];
     const fields = [];
     const values = [];
     let paramIndex = 1;

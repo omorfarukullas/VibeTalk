@@ -10,9 +10,9 @@ class AppConstants {
       'End-to-end encrypted messaging and calling';
 
   // ── API ─────────────────────────────────────────────────────────────
-  static const String apiBaseUrl = 'http://192.168.0.105:3000/api/';
+  static const String apiBaseUrl = 'http://192.168.0.103:3000/api/';
   // Socket.IO must connect to server root, not /api/
-  static const String socketBaseUrl = 'http://192.168.0.105:3000';
+  static const String socketBaseUrl = 'http://192.168.0.103:3000';
   static const String apiVersion = '/api/v1';
 
 

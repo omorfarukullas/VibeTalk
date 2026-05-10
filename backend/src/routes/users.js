@@ -11,7 +11,14 @@ const {
   getKeys,
   findContacts,
   searchUsers,
+  checkUsernameAvailability,
 } = require('../controllers/usersController');
+
+/**
+ * GET /api/users/check-username?u=...
+ * Check username availability
+ */
+router.get('/check-username', authenticate, checkUsernameAvailability);
 
 /**
  * GET /api/users/search

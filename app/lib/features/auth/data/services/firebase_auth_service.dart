@@ -11,6 +11,9 @@ class FirebaseAuthService {
   /// Returns the Firebase token (JWT) if successful.
   Future<String?> signInWithGoogle() async {
     try {
+      // Force account picker by clearing previously cached account
+      await _googleSignIn.signOut();
+      
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return null; // The user canceled the sign-in

@@ -30,6 +30,10 @@ const start = async () => {
     const dbConnected = await testDB();
     if (dbConnected) {
       logger.info('✅ PostgreSQL connected');
+      // Auto-create required tables if they don't exist
+      const FriendModel = require('./models/Friend');
+      await FriendModel.createTable();
+      logger.info('✅ Friends table ready');
     } else {
       logger.warn('⚠️  PostgreSQL connection failed — server starting without DB');
     }

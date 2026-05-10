@@ -95,7 +95,8 @@ class ApiClient {
       path,
       data: formData,
       onSendProgress: onSendProgress,
-      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      // Setting contentType property (not headers map) allows Dio to append boundary
+      options: Options(contentType: 'multipart/form-data'),
     );
   }
 }
@@ -203,7 +204,16 @@ class _ErrorInterceptor extends Interceptor {
       case DioExceptionType.badResponse:
         final statusCode = err.response?.statusCode ?? 0;
         final data = err.response?.data;
-        final message = data is Map ? data['message'] as String? : null;
+        
+        String? message;
+        if (data is Map) {
+          if (data['error'] is Map && data['error']['message'] != null) {
+            message = data['error']['message'] as String;
+          } else if (data['message'] != null) {
+            message = data['message'] as String;
+          }
+        }
+        
         throw ApiException(
           statusCode: statusCode,
           message: message ?? 'Request failed with status $statusCode',

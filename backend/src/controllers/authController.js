@@ -64,8 +64,9 @@ const register = async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        username: user.username,
         avatarUrl: user.avatar_url,
-        isProfileComplete: !!user.name, // True if they have set a display name
+        isProfileComplete: !!user.name && !!user.username, // True if they have set a display name and username
       },
       tokens,
     });
@@ -126,7 +127,9 @@ const getMe = async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      username: user.username,
       avatarUrl: user.avatar_url,
+      bio: user.bio,
     });
   } catch (error) {
     logger.error('Get profile error', { error: error.message });

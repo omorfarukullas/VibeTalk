@@ -25,6 +25,8 @@ import 'package:vibetalk/features/profile/presentation/screens/profile_screen.da
 import 'package:vibetalk/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:vibetalk/features/profile/presentation/screens/settings_screen.dart';
 import 'package:vibetalk/shared/widgets/shell_scaffold.dart';
+import 'package:vibetalk/features/friends/presentation/screens/friends_screen.dart';
+import 'package:vibetalk/features/friends/presentation/bloc/friend_bloc.dart';
 
 /// Centralised route path constants.
 abstract class RoutePaths {
@@ -41,6 +43,7 @@ abstract class RoutePaths {
   static const String createGroup = '/groups/create';
   static const String mediaViewer = '/media/:mediaId';
   static const String camera = '/camera';
+  static const String friends = '/friends';
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
   static const String settings = '/settings';
@@ -94,7 +97,10 @@ final GoRouter appRouter = GoRouter(
     // ── Main app with bottom nav shell ───────────────────────────────────
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) => ShellScaffold(child: child),
+      builder: (context, state, child) => BlocProvider(
+        create: (_) => sl<FriendBloc>(),
+        child: ShellScaffold(child: child),
+      ),
       routes: [
         GoRoute(
           path: RoutePaths.chats,
@@ -142,6 +148,11 @@ final GoRouter appRouter = GoRouter(
           name: 'profile',
           builder: (context, state) => const ProfileScreen(),
         ),
+        GoRoute(
+          path: RoutePaths.friends,
+          name: 'friends',
+          builder: (context, state) => const FriendsScreen(),
+        ),
       ],
     ),
 
@@ -182,20 +193,16 @@ final GoRouter appRouter = GoRouter(
     final authenticated = _isAuthenticated();
     final path = state.matchedLocation;
 
-    // Public paths that don't require auth
-    final publicPaths = ['/', '/login', '/profile-setup'];
-    final isPublic = publicPaths.any((p) => path == p || path.startsWith(p));
+    // Always allow the splash screen — AuthBloc handles routing from there
+    if (path == '/') return null;
 
-    // Redirect unauthenticated users away from protected routes
-    if (!authenticated && !isPublic) {
-      return RoutePaths.login;
+    // Always allow login and profile-setup
+    if (path == '/login' || path.startsWith('/profile-setup')) return null;
+
+    // Redirect unauthenticated users away from protected routes to login
+    if (!authenticated) {
+      return '/login';
     }
-
-    // Redirect authenticated users away from login screen
-    if (authenticated && path == RoutePaths.login) {
-      return RoutePaths.chats;
-    }
-
 
     return null;
   },

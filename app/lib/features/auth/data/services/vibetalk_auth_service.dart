@@ -34,12 +34,13 @@ class VibeTalkAuthService {
   }
 
   /// Updates the user's profile information.
-  Future<Map<String, dynamic>> updateProfile({String? name, String? bio, String? avatarUrl}) async {
+  Future<Map<String, dynamic>> updateProfile({String? name, String? username, String? bio, String? avatarUrl}) async {
     try {
       final response = await _apiClient.put(
         'users/profile',
         data: {
           if (name != null) 'name': name,
+          if (username != null) 'username': username,
           if (bio != null) 'bio': bio,
           if (avatarUrl != null) 'avatar_url': avatarUrl,
         },
@@ -74,6 +75,19 @@ class VibeTalkAuthService {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to get current user: $e');
+    }
+  }
+
+  /// Checks if a username is available.
+  Future<bool> checkUsernameAvailability(String username) async {
+    try {
+      final response = await _apiClient.get(
+        'users/check-username',
+        queryParameters: {'u': username},
+      );
+      return response.data['data']['available'] as bool;
+    } catch (e) {
+      return false;
     }
   }
 }

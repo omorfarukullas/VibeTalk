@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/encryption/key_generator.dart';
 import '../../../../core/encryption/keys_service.dart';
@@ -106,7 +107,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       // Log the error but don't fail authentication
-      print('Error uploading keys: $e');
+      debugPrint('Error uploading keys: $e');
     }
   }
 
@@ -118,6 +119,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _authRepository.updateProfile(
         name: event.name,
+        username: event.username,
         bio: event.bio,
         imagePath: event.imagePath,
       );

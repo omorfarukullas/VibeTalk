@@ -52,6 +52,17 @@ class EditProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const TextField(
+              decoration: InputDecoration(
+                labelText: 'Username',
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 14.0, right: 8.0, bottom: 2.0),
+                  child: Text('@', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+                prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const TextField(
               maxLines: 3,
               decoration: InputDecoration(
                 labelText: 'Bio',

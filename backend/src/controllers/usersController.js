@@ -13,7 +13,7 @@ const logger = require('../utils/logger');
  */
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, bio, avatar_url } = req.body;
+    const { name, bio, avatar_url, username } = req.body;
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length < 2)) {
       return next(new AppError('Name must be at least 2 characters.', 400, 'VALIDATION_ERROR'));
@@ -22,10 +22,27 @@ const updateProfile = async (req, res, next) => {
       return next(new AppError('Bio must not exceed 500 characters.', 400, 'VALIDATION_ERROR'));
     }
 
+    let formattedUsername;
+    if (username !== undefined) {
+      if (typeof username !== 'string') {
+        return next(new AppError('Username must be a string.', 400, 'VALIDATION_ERROR'));
+      }
+      formattedUsername = username.trim().toLowerCase();
+      if (formattedUsername.startsWith('@')) {
+        formattedUsername = formattedUsername.substring(1);
+      }
+      
+      const usernameRegex = /^[a-z0-9._]{3,30}$/;
+      if (!usernameRegex.test(formattedUsername)) {
+        return next(new AppError('Username must be 3-30 characters long and can only contain lowercase letters, numbers, dots, and underscores.', 400, 'VALIDATION_ERROR'));
+      }
+    }
+
     const updates = {};
     if (name !== undefined) updates.name = name.trim();
     if (bio !== undefined) updates.bio = bio;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    if (formattedUsername !== undefined) updates.username = formattedUsername;
 
     if (Object.keys(updates).length === 0) {
       return next(new AppError('No fields provided to update.', 400, 'NO_UPDATES'));
@@ -36,13 +53,16 @@ const updateProfile = async (req, res, next) => {
       return next(new AppError('User not found.', 404, 'USER_NOT_FOUND'));
     }
 
-    const { id, phone_number, name: userName, avatar_url: avatarUrl, bio: userBio, status, updated_at } = user;
+    const { id, phone_number, name: userName, username: userUsername, avatar_url: avatarUrl, bio: userBio, status, updated_at } = user;
 
     return res.json({
       success: true,
-      data: { user: { id, phone_number, name: userName, avatar_url: avatarUrl, bio: userBio, status, updated_at } },
+      data: { user: { id, phone_number, name: userName, username: userUsername, avatar_url: avatarUrl, bio: userBio, status, updated_at } },
     });
   } catch (error) {
+    if (error.code === '23505' && (error.constraint === 'users_username_key' || error.constraint === 'idx_users_username')) {
+      return next(new AppError('Username is already taken.', 409, 'USERNAME_TAKEN'));
+    }
     next(error);
   }
 };
@@ -186,22 +206,50 @@ const findContacts = async (req, res, next) => {
  */
 const searchUsers = async (req, res, next) => {
   try {
-    const { q } = req.query;
+    const { q, type } = req.query;
     
     if (!q || typeof q !== 'string' || q.trim().length < 2) {
       return next(new AppError('Search query must be at least 2 characters.', 400, 'VALIDATION_ERROR'));
     }
 
-    const queryStr = `%${q.trim()}%`;
+    let queryStr = q.trim();
+    if (type === 'username' && queryStr.startsWith('@')) {
+      queryStr = queryStr.substring(1);
+    }
     
-    const result = await query(
-      `SELECT id, name, email, avatar_url 
-       FROM users 
-       WHERE (name ILIKE $1 OR email ILIKE $1) 
-       AND id != $2
-       LIMIT 20`,
-      [queryStr, req.user.id]
-    );
+    const searchPattern = `%${queryStr}%`;
+    let result;
+
+    const baseQuery = `
+      SELECT u.id, u.name, u.username, u.avatar_url, f.status as friendship_status, f.requester_id as requester_id
+      FROM users u
+      LEFT JOIN friends f 
+        ON (f.requester_id = $2 AND f.addressee_id = u.id) 
+        OR (f.addressee_id = $2 AND f.requester_id = u.id)
+    `;
+
+    if (type === 'username') {
+      result = await query(
+        `${baseQuery} WHERE u.username ILIKE $1 AND u.id != $2 LIMIT 20`,
+        [searchPattern, req.user.id]
+      );
+    } else if (type === 'email') {
+      result = await query(
+        `${baseQuery} WHERE u.email ILIKE $1 AND u.id != $2 LIMIT 20`,
+        [searchPattern, req.user.id]
+      );
+    } else if (type === 'name') {
+      result = await query(
+        `${baseQuery} WHERE u.name ILIKE $1 AND u.id != $2 LIMIT 20`,
+        [searchPattern, req.user.id]
+      );
+    } else {
+      // Default: search all
+      result = await query(
+        `${baseQuery} WHERE (u.name ILIKE $1 OR u.email ILIKE $1 OR u.username ILIKE $1) AND u.id != $2 LIMIT 20`,
+        [searchPattern, req.user.id]
+      );
+    }
 
     return res.json({
       success: true,
@@ -212,5 +260,40 @@ const searchUsers = async (req, res, next) => {
   }
 };
 
-module.exports = { updateProfile, uploadAvatar, uploadKeys, getKeys, findContacts, searchUsers };
+/**
+ * GET /api/users/check-username?u=...
+ * Check if a username is available
+ */
+const checkUsernameAvailability = async (req, res, next) => {
+  try {
+    const { u } = req.query;
+    
+    if (!u || typeof u !== 'string') {
+      return res.json({ success: true, data: { available: false } });
+    }
+
+    let formattedUsername = u.trim().toLowerCase();
+    if (formattedUsername.startsWith('@')) {
+      formattedUsername = formattedUsername.substring(1);
+    }
+
+    if (formattedUsername.length < 3) {
+      return res.json({ success: true, data: { available: false } });
+    }
+
+    const result = await query(
+      `SELECT id FROM users WHERE username = $1`,
+      [formattedUsername]
+    );
+
+    return res.json({
+      success: true,
+      data: { available: result.rowCount === 0 },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { updateProfile, uploadAvatar, uploadKeys, getKeys, findContacts, searchUsers, checkUsernameAvailability };
 

@@ -40,12 +40,17 @@ class ChatRepository {
     }
   }
 
-  /// Searches for registered users by name or email.
-  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+  /// Searches for registered users by name, email, or username.
+  Future<List<Map<String, dynamic>>> searchUsers(String query, {String? type}) async {
     try {
+      final queryParams = <String, dynamic>{'q': query};
+      if (type != null) {
+        queryParams['type'] = type;
+      }
+
       final response = await _apiClient.get(
         'users/search',
-        queryParameters: {'q': query},
+        queryParameters: queryParams,
       );
       final List<dynamic> data = response.data['data']['users'];
       return List<Map<String, dynamic>>.from(data);
@@ -64,6 +69,23 @@ class ChatRepository {
       return response.data['data']['chat'];
     } catch (e) {
       throw Exception('Failed to create chat: $e');
+    }
+  }
+
+  /// Phase 2: Marks a list of messages as read via REST (reliable fallback to socket).
+  /// The backend also broadcasts the 'message_status' socket event to the sender.
+  Future<void> markMessagesRead(String roomId, List<String> messageIds) async {
+    if (messageIds.isEmpty) return;
+    try {
+      await _apiClient.patch(
+        'messages/read',
+        data: {
+          'roomId': roomId,
+          'messageIds': messageIds,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to mark messages as read: $e');
     }
   }
 }

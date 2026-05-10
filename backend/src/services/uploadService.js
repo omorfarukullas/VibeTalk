@@ -25,19 +25,9 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 const multerUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE },
+  // Allow all file types for chat media and documents
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(
-        new AppError(
-          'Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.',
-          400,
-          'INVALID_FILE_TYPE',
-        ),
-        false,
-      );
-    }
+    cb(null, true);
   },
 });
 

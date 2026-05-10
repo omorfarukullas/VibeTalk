@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { getMessages } = require('../controllers/messagesController');
+const { getMessages, markMessagesRead } = require('../controllers/messagesController');
 
 /**
- * GET /api/messages?chatId=...
- * Get historical messages for a chat.
+ * GET /api/messages?chatId=...&limit=50&offset=0
+ * Get historical messages for a chat (paginated).
  */
 router.get('/', authenticate, getMessages);
 
-module.exports = router;
+/**
+ * PATCH /api/messages/read
+ * Phase 2: Mark a batch of messages as read and notify sender via Socket.IO.
+ */
+router.patch('/read', authenticate, markMessagesRead);
 
+module.exports = router;

@@ -36,7 +36,10 @@ class EncryptionService {
     final iv = encrypt.IV.fromSecureRandom(_ivLength);
     final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
 
-    final encrypted = encrypter.encrypt(plaintext, iv: iv);
+    // The 'encrypt' package throws RangeError on completely empty strings.
+    // We pad it with a space if empty to ensure valid PKCS7 padding blocks.
+    final safeText = plaintext.isEmpty ? " " : plaintext;
+    final encrypted = encrypter.encrypt(safeText, iv: iv);
 
     return {
       'ciphertext': encrypted.base64,

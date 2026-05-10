@@ -114,7 +114,7 @@ const ChatModel = {
          c.created_at,
          -- Get the other participant's details (for direct chats)
          (
-           SELECT json_build_object('id', u.id, 'name', u.name, 'email', u.email, 'avatar_url', u.avatar_url)
+           SELECT json_build_object('id', u.id, 'name', u.name, 'email', u.email, 'avatar_url', u.avatar_url, 'last_seen', u.last_seen)
            FROM chat_participants cp2
            JOIN users u ON cp2.user_id = u.id
            WHERE cp2.chat_id = c.id AND cp2.user_id != $1
@@ -133,7 +133,13 @@ const ChatModel = {
            WHERE m.chat_id = c.id
            ORDER BY m.created_at DESC
            LIMIT 1
-         ) as last_message
+         ) as last_message,
+         -- Get unread count for this user
+         (
+           SELECT COUNT(*)
+           FROM messages m
+           WHERE m.chat_id = c.id AND m.sender_id != $1 AND m.status != 'read'
+         ) as unread_count
        FROM chats c
        JOIN chat_participants cp ON c.id = cp.chat_id
        WHERE cp.user_id = $1

@@ -72,6 +72,8 @@ dependencies:
   # ── Utilities ────────────────────────────────────────────────────────
   intl: ^0.20.2
   google_sign_in: ^6.2.1
+  emoji_picker_flutter: ^4.4.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

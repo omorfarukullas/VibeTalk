@@ -9,6 +9,9 @@ import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 
 import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 
+import 'dart:async';
+import 'package:vibetalk/config/service_locator.dart';
+import 'package:vibetalk/features/auth/data/services/vibetalk_auth_service.dart';
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -18,14 +21,21 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final FocusNode _nameFocus = FocusNode();
+  final FocusNode _usernameFocus = FocusNode();
   final FocusNode _bioFocus = FocusNode();
   final ImagePicker _picker = ImagePicker();
 
   File? _selectedImage;
   String? _uploadedAvatarUrl;
   bool _isNameValid = false;
+  bool _isUsernameValid = false;
+
+  Timer? _debounce;
+  bool _isCheckingUsername = false;
+  bool? _isUsernameAvailable;
 
   static const int _maxBioLength = 150;
   static const int _maxNameLength = 50;
@@ -40,13 +50,52 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             trimmed.length >= 2 && trimmed.length <= _maxNameLength,
       );
     });
+
+    _usernameController.addListener(() {
+      final text = _usernameController.text;
+      if (text != text.toLowerCase()) {
+        _usernameController.value = _usernameController.value.copyWith(
+          text: text.toLowerCase(),
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+      final trimmed = _usernameController.text.trim();
+      final regex = RegExp(r'^[a-z0-9._]{3,30}$');
+      final isValidFormat = regex.hasMatch(trimmed);
+      
+      setState(() {
+        _isUsernameValid = isValidFormat;
+        if (!isValidFormat) {
+          _isUsernameAvailable = null;
+          _isCheckingUsername = false;
+        }
+      });
+
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+      
+      if (isValidFormat) {
+        setState(() => _isCheckingUsername = true);
+        _debounce = Timer(const Duration(milliseconds: 600), () async {
+          final isAvailable = await sl<VibeTalkAuthService>().checkUsernameAvailability(trimmed);
+          if (mounted) {
+            setState(() {
+              _isUsernameAvailable = isAvailable;
+              _isCheckingUsername = false;
+            });
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _nameController.dispose();
+    _usernameController.dispose();
     _bioController.dispose();
     _nameFocus.dispose();
+    _usernameFocus.dispose();
     _bioFocus.dispose();
     super.dispose();
   }
@@ -109,12 +158,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _onDone() {
-    if (!_isNameValid) return;
+    if (!_isNameValid || !_isUsernameValid || _isUsernameAvailable != true) return;
     FocusScope.of(context).unfocus();
 
     context.read<AuthBloc>().add(
           UpdateProfileEvent(
             name: _nameController.text.trim(),
+            username: _usernameController.text.trim(),
             bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
             imagePath: _selectedImage?.path,
           ),
@@ -250,6 +300,45 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             )
                           : null,
                     ),
+                    onSubmitted: (_) => _usernameFocus.requestFocus(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Username field
+                  TextField(
+                    controller: _usernameController,
+                    focusNode: _usernameFocus,
+                    maxLength: 30,
+                    decoration: InputDecoration(
+                      labelText: 'Username *',
+                      hintText: 'e.g. johndoe',
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(left: 14.0, right: 8.0, bottom: 2.0),
+                        child: Text('@', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                      counterText: '',
+                      errorText: _isUsernameValid && _isUsernameAvailable == false
+                          ? 'Username is already taken'
+                          : null,
+                      suffixIcon: _isCheckingUsername
+                          ? const Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : (_isUsernameValid && _isUsernameAvailable == true)
+                              ? Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.green.shade400,
+                                  size: 20,
+                                )
+                              : null,
+                    ),
                     onSubmitted: (_) => _bioFocus.requestFocus(),
                   ),
 
@@ -284,10 +373,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     builder: (context, state) {
                       final isLoading = state is AuthLoading;
                       return AnimatedOpacity(
-                        opacity: _isNameValid ? 1.0 : 0.4,
+                        opacity: (_isNameValid && _isUsernameValid && _isUsernameAvailable == true) ? 1.0 : 0.4,
                         duration: const Duration(milliseconds: 200),
                         child: ElevatedButton(
-                          onPressed: (_isNameValid && !isLoading)
+                          onPressed: (_isNameValid && _isUsernameValid && _isUsernameAvailable == true && !isLoading)
                               ? _onDone
                               : null,
                           style: ElevatedButton.styleFrom(

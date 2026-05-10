@@ -27,6 +27,7 @@ class SocketService {
           .enableReconnection()
           .setReconnectionAttempts(5)
           .setReconnectionDelay(2000)
+          .enableForceNew() // Crucial: forces new connection with new token on logout/login
           .build(),
     );
 

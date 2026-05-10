@@ -66,7 +66,7 @@ class VibeTalkApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<AuthBloc>()),
-        BlocProvider(create: (_) => sl<ChatBloc>()..add(ConnectSocketEvent())..add(LoadChatsEvent())),
+        BlocProvider(create: (_) => sl<ChatBloc>()),
       ],
       child: MaterialApp.router(
 

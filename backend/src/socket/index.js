@@ -32,7 +32,7 @@ const initSocket = (httpServer) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.user = {
-        id: decoded.id,
+        id: decoded.userId,
         phone: decoded.phone,
       };
       next();
@@ -109,6 +109,9 @@ const initSocket = (httpServer) => {
       if (!chatRoomId || !payload.ciphertext) return;
       
       try {
+        let msgType = payload.messageType || 'text';
+        if (msgType === 'file') msgType = 'document';
+
         // Persist message to database
         const savedMessage = await MessageModel.create({
           chat_id: chatRoomId,
@@ -118,9 +121,9 @@ const initSocket = (httpServer) => {
              iv: payload.iv,
              sessionKey: payload.sessionKey,
              text: payload.text, // Mock only
-             mediaUrl: payload.mediaUrl // Mock only for images
+             mediaUrl: payload.mediaUrl // Mock only for images/files
           }),
-          message_type: payload.messageType || 'text',
+          message_type: msgType,
         });
 
 
@@ -228,10 +231,20 @@ const initSocket = (httpServer) => {
       // If no sockets left, user is fully offline
       const activeSockets = await redis.scard(`user:${userId}:sockets`);
       if (activeSockets === 0) {
+        // Broadcast offline status
         socket.broadcast.emit('user_offline', {
           userId,
           timestamp: new Date().toISOString(),
         });
+
+        // Persist last_seen to DB
+        try {
+          const UserModel = require('../models/User');
+          await UserModel.updateLastSeen(userId);
+          logger.debug('Updated last_seen for user', { userId });
+        } catch (err) {
+          logger.error('Failed to update last_seen', { error: err.message });
+        }
       }
     });
 

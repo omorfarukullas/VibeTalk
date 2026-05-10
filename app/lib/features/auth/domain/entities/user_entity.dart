@@ -4,6 +4,7 @@ class UserEntity {
   final String id;
   final String phoneNumber;
   final String? name;
+  final String? username;
   final String? avatarUrl;
   final String? bio;
   final String status;
@@ -15,6 +16,7 @@ class UserEntity {
     required this.id,
     required this.phoneNumber,
     this.name,
+    this.username,
     this.avatarUrl,
     this.bio,
     this.status = 'active',
@@ -23,13 +25,17 @@ class UserEntity {
     required this.updatedAt,
   });
 
-  /// True when the user has completed their profile (has a name).
-  bool get isProfileComplete => name != null && name!.trim().isNotEmpty;
+  /// Get the username with an '@' prefix
+  String get atUsername => username != null ? '@$username' : '';
+
+  /// True when the user has completed their profile (has a name and username).
+  bool get isProfileComplete => name != null && name!.trim().isNotEmpty && username != null && username!.trim().isNotEmpty;
 
   UserEntity copyWith({
     String? id,
     String? phoneNumber,
     String? name,
+    String? username,
     String? avatarUrl,
     String? bio,
     String? status,
@@ -41,6 +47,7 @@ class UserEntity {
       id: id ?? this.id,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       name: name ?? this.name,
+      username: username ?? this.username,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       bio: bio ?? this.bio,
       status: status ?? this.status,
@@ -53,8 +60,9 @@ class UserEntity {
   factory UserEntity.fromMap(Map<String, dynamic> map) {
     return UserEntity(
       id: map['id'] as String,
-      phoneNumber: map['phone_number'] as String,
+      phoneNumber: map['phone_number'] ?? map['email'] as String, // Using phone_number or email based on backend structure.
       name: map['name'] as String?,
+      username: map['username'] as String?,
       avatarUrl: map['avatar_url'] as String?,
       bio: map['bio'] as String?,
       status: map['status'] as String? ?? 'active',
@@ -72,6 +80,7 @@ class UserEntity {
         'id': id,
         'phone_number': phoneNumber,
         'name': name,
+        'username': username,
         'avatar_url': avatarUrl,
         'bio': bio,
         'status': status,
@@ -89,5 +98,5 @@ class UserEntity {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'UserEntity(id: $id, phone: $phoneNumber, name: $name)';
+  String toString() => 'UserEntity(id: $id, phone: $phoneNumber, name: $name, username: $username)';
 }

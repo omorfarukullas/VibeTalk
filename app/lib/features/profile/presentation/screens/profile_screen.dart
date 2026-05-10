@@ -6,6 +6,7 @@ import 'package:vibetalk/features/auth/presentation/bloc/auth_event.dart';
 import 'package:vibetalk/features/auth/presentation/bloc/auth_state.dart';
 import 'package:vibetalk/config/service_locator.dart';
 import 'package:vibetalk/features/auth/data/services/vibetalk_auth_service.dart';
+import 'package:vibetalk/features/chat/presentation/bloc/chat_bloc.dart';
 
 /// User profile screen — displays own profile info.
 class ProfileScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             final user = snapshot.data ?? {};
             final name = user['name'] ?? 'Your Name';
+            final username = user['username'];
             final bio = user['bio'] ?? 'Hey there! I am using VibeTalk';
             final avatarUrl = user['avatarUrl'] ?? user['avatar_url'];
 
@@ -66,8 +68,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(name, style: theme.textTheme.headlineMedium),
+                  if (username != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '@$username',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
-                  Text(bio, style: theme.textTheme.bodySmall),
+                  Text(bio, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 32),
                   _buildMenuItem(
                     context,
@@ -127,6 +139,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                       if (confirmed == true && context.mounted) {
+                        context.read<ChatBloc>().add(DisconnectSocketEvent());
+                        context.read<ChatBloc>().add(ClearChatEvent());
                         context.read<AuthBloc>().add(LogoutEvent());
                         // We wait for the BlocListener to trigger the redirect
                       }

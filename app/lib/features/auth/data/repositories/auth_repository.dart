@@ -1,9 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:vibetalk/config/service_locator.dart';
 import 'package:vibetalk/core/storage/local_storage.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/vibetalk_auth_service.dart';
+import 'package:vibetalk/core/errors/app_exception.dart';
 
 
 class AuthRepository {
@@ -92,10 +93,28 @@ class AuthRepository {
     await sl<LocalStorageService>().clearAll();
   }
 
-  /// Checks if the user is currently logged in by checking the secure storage
+  /// Checks if the user is currently logged in and validates the token
   Future<bool> isLoggedIn() async {
     final token = await _secureStorage.read(key: 'access_token');
-    return token != null;
+    if (token == null) return false;
+
+    try {
+      final user = await _vibeTalkService.getCurrentUser();
+      if (user['id'] != null) {
+        await sl<LocalStorageService>().saveUserId(user['id'].toString());
+      }
+      return true;
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        // Token is invalid and refresh failed, so log out
+        debugPrint('Token invalid on startup. Logging out.');
+        await logout();
+        return false;
+      }
+      // If it's a network error, assume they are still logged in locally
+      debugPrint('Network error on startup, assuming logged in: $e');
+      return true;
+    }
   }
 
   /// Checks if the user's profile is complete
@@ -105,19 +124,20 @@ class AuthRepository {
   }
 
   /// Updates the user's profile and saves the status to secure storage
-  Future<void> updateProfile({required String name, String? bio, String? imagePath}) async {
+  Future<void> updateProfile({required String name, required String username, String? bio, String? imagePath}) async {
     String? avatarUrl;
     if (imagePath != null) {
       try {
         avatarUrl = await _vibeTalkService.uploadAvatar(imagePath);
       } catch (e) {
         // Avatar upload failed (e.g. R2 not configured) — continue without avatar
-        print('Avatar upload skipped: $e');
+        debugPrint('Avatar upload skipped: $e');
       }
     }
 
     final response = await _vibeTalkService.updateProfile(
       name: name,
+      username: username,
       bio: bio,
       avatarUrl: avatarUrl,
     );
